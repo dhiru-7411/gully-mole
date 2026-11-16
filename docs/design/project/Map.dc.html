@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Map layout</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Space+Grotesk:wght@600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#ffd43b}a:hover{color:#ffe680}
+</style>
+</helmet>
+<div style="width: 1600px; height: 1010px; box-sizing: border-box; padding: 36px 80px 0; background: #1b1d24; color: #f1f2f6; font-family: Inter, system-ui, sans-serif; display: flex; flex-direction: column; gap: 18px">
+
+  <div style="display: flex; justify-content: space-between; align-items: flex-end; gap: 32px">
+    <div style="display: flex; flex-direction: column; gap: 6px">
+      <h1 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 40px; letter-spacing: -0.5px">Map: "Gully No. 7"</h1>
+      <p style="margin: 0; color: #a7adc0; font-size: 16px; max-width: 900px">Real game scale: 1440 × 810 world pixels, players 28 px. Both halves are the same layout turned 180°, so neither team has a better side. Lanes are the open ground between buildings.</p>
+    </div>
+    <p style="margin: 0; color: #a7adc0; font-size: 14px; text-align: right; max-width: 360px">A phone in landscape shows roughly a quarter of this. The camera follows you.</p>
+  </div>
+
+  <!-- The map: 1440 x 810 -->
+  <div style="position: relative; width: 1440px; height: 810px; background: #23262f; border-radius: 14px; overflow: hidden; border: 1px solid #3a3e4c">
+
+    <!-- Halves -->
+    <div style="position: absolute; left: 0; top: 0; width: 720px; height: 810px; background: rgba(61, 123, 255, 0.07)"></div>
+    <div style="position: absolute; left: 720px; top: 0; width: 720px; height: 810px; background: rgba(255, 154, 60, 0.07)"></div>
+    <div style="position: absolute; left: 719px; top: 0; width: 0; height: 810px; border-left: 2px dashed rgba(241, 242, 246, 0.28)"></div>
+    <p style="position: absolute; left: 18px; top: 12px; margin: 0; font-size: 13px; font-weight: 600; letter-spacing: 0.6px; color: #8fb2ff">POLICE HALF · Police can tag Chor here</p>
+    <p style="position: absolute; right: 18px; top: 12px; margin: 0; font-size: 13px; font-weight: 600; letter-spacing: 0.6px; color: #ffbf85">CHOR HALF · Chor can tag Police here</p>
+
+    <!-- Bases -->
+    <div style="position: absolute; left: 40px; top: 305px; width: 150px; height: 200px; box-sizing: border-box; border: 3px solid #3d7bff; background: rgba(61, 123, 255, 0.2); border-radius: 14px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px">
+      <span style="font-size: 16px; font-weight: 600">Police thana</span>
+      <span style="font-size: 12px; color: #c4d6ff">bring the potli here</span>
+    </div>
+    <div style="position: absolute; left: 1250px; top: 305px; width: 150px; height: 200px; box-sizing: border-box; border: 3px solid #ff9a3c; background: rgba(255, 154, 60, 0.2); border-radius: 14px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px">
+      <span style="font-size: 16px; font-weight: 600">Chor adda</span>
+      <span style="font-size: 12px; color: #ffd9b8">bring the potli here</span>
+    </div>
+
+    <!-- Middle zone + object -->
+    <div style="position: absolute; left: 625px; top: 310px; width: 190px; height: 190px; box-sizing: border-box; border-radius: 50%; border: 2px dashed rgba(255, 212, 59, 0.75); background: rgba(255, 212, 59, 0.06)"></div>
+    <svg style="position: absolute; left: 696px; top: 380px" width="48" height="48" viewBox="0 0 100 100" role="img" aria-label="The object: a gold potli in the middle zone">
+      <path d="M42 34 L34 24 L50 29 L66 24 L58 34 Z" fill="#ffd43b" stroke="#11131a" stroke-width="4" stroke-linejoin="round"></path>
+      <path d="M40 38 C28 52 28 76 50 78 C72 76 72 52 60 38 Z" fill="#ffd43b" stroke="#11131a" stroke-width="4"></path>
+      <rect x="39" y="32" width="22" height="8" rx="4" fill="#d4a017" stroke="#11131a" stroke-width="3"></rect>
+    </svg>
+    <p style="position: absolute; left: 650px; top: 506px; width: 140px; margin: 0; text-align: center; font-size: 12px; color: #ffe38a">middle zone</p>
+
+    <!-- Buildings / walls (block vision) -->
+    <div style="position: absolute; left: 230px; top: 60px; width: 180px; height: 120px; background: #3a3e4c; border-radius: 6px; border-top: 4px solid #4b5062"></div>
+    <div style="position: absolute; left: 230px; top: 260px; width: 60px; height: 290px; background: #3a3e4c; border-radius: 6px; border-top: 4px solid #4b5062"></div>
+    <div style="position: absolute; left: 230px; top: 630px; width: 180px; height: 120px; background: #3a3e4c; border-radius: 6px; border-top: 4px solid #4b5062"></div>
+    <div style="position: absolute; left: 470px; top: 230px; width: 130px; height: 70px; background: #3a3e4c; border-radius: 6px; border-top: 4px solid #4b5062"></div>
+    <div style="position: absolute; left: 470px; top: 510px; width: 130px; height: 70px; background: #3a3e4c; border-radius: 6px; border-top: 4px solid #4b5062"></div>
+    <div style="position: absolute; left: 560px; top: 40px; width: 100px; height: 110px; background: #3a3e4c; border-radius: 6px; border-top: 4px solid #4b5062"></div>
+
+    <div style="position: absolute; left: 1030px; top: 630px; width: 180px; height: 120px; background: #3a3e4c; border-radius: 6px; border-top: 4px solid #4b5062"></div>
+    <div style="position: absolute; left: 1150px; top: 260px; width: 60px; height: 290px; background: #3a3e4c; border-radius: 6px; border-top: 4px solid #4b5062"></div>
+    <div style="position: absolute; left: 1030px; top: 60px; width: 180px; height: 120px; background: #3a3e4c; border-radius: 6px; border-top: 4px solid #4b5062"></div>
+    <div style="position: absolute; left: 840px; top: 510px; width: 130px; height: 70px; background: #3a3e4c; border-radius: 6px; border-top: 4px solid #4b5062"></div>
+    <div style="position: absolute; left: 840px; top: 230px; width: 130px; height: 70px; background: #3a3e4c; border-radius: 6px; border-top: 4px solid #4b5062"></div>
+    <div style="position: absolute; left: 780px; top: 660px; width: 100px; height: 110px; background: #3a3e4c; border-radius: 6px; border-top: 4px solid #4b5062"></div>
+
+    <!-- Carts (thelas) -->
+    <div style="position: absolute; left: 520px; top: 380px; width: 50px; height: 26px; background: #8a5a3c; border-radius: 5px; border: 2px solid #5e3c27"></div>
+    <div style="position: absolute; left: 120px; top: 560px; width: 50px; height: 26px; background: #8a5a3c; border-radius: 5px; border: 2px solid #5e3c27"></div>
+    <div style="position: absolute; left: 870px; top: 404px; width: 50px; height: 26px; background: #8a5a3c; border-radius: 5px; border: 2px solid #5e3c27"></div>
+    <div style="position: absolute; left: 1270px; top: 224px; width: 50px; height: 26px; background: #8a5a3c; border-radius: 5px; border: 2px solid #5e3c27"></div>
+
+    <!-- Chai stalls -->
+    <div style="position: absolute; left: 520px; top: 700px; width: 70px; height: 40px; background: #2f8a8a; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; color: #e6fffb">chai</div>
+    <div style="position: absolute; left: 850px; top: 70px; width: 70px; height: 40px; background: #2f8a8a; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; color: #e6fffb">chai</div>
+
+    <!-- Trees -->
+    <div style="position: absolute; left: 128px; top: 98px; width: 44px; height: 44px; box-sizing: border-box; border-radius: 50%; background: #2f6b46; border: 4px solid #3f8a5a"></div>
+    <div style="position: absolute; left: 128px; top: 668px; width: 44px; height: 44px; box-sizing: border-box; border-radius: 50%; background: #2f6b46; border: 4px solid #3f8a5a"></div>
+    <div style="position: absolute; left: 358px; top: 398px; width: 44px; height: 44px; box-sizing: border-box; border-radius: 50%; background: #2f6b46; border: 4px solid #3f8a5a"></div>
+    <div style="position: absolute; left: 638px; top: 208px; width: 44px; height: 44px; box-sizing: border-box; border-radius: 50%; background: #2f6b46; border: 4px solid #3f8a5a"></div>
+    <div style="position: absolute; left: 1268px; top: 668px; width: 44px; height: 44px; box-sizing: border-box; border-radius: 50%; background: #2f6b46; border: 4px solid #3f8a5a"></div>
+    <div style="position: absolute; left: 1268px; top: 98px; width: 44px; height: 44px; box-sizing: border-box; border-radius: 50%; background: #2f6b46; border: 4px solid #3f8a5a"></div>
+    <div style="position: absolute; left: 1038px; top: 368px; width: 44px; height: 44px; box-sizing: border-box; border-radius: 50%; background: #2f6b46; border: 4px solid #3f8a5a"></div>
+    <div style="position: absolute; left: 758px; top: 558px; width: 44px; height: 44px; box-sizing: border-box; border-radius: 50%; background: #2f6b46; border: 4px solid #3f8a5a"></div>
+
+    <!-- Fireplaces (angithi) -->
+    <div style="position: absolute; left: 442px; top: 112px; width: 56px; height: 56px; box-sizing: border-box; border-radius: 50%; background: #3a2416; border: 3px solid #ff8a3d; box-shadow: 0 0 0 10px rgba(255, 138, 61, 0.18); display: flex; align-items: center; justify-content: center">
+      <svg width="26" height="26" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 C16 7 18 11 16 16 C15 19 9 19 8 16 C6.5 12 9 9 12 2 Z" fill="#ffd43b" stroke="#ff8a3d" stroke-width="1.5"></path></svg>
+    </div>
+    <div style="position: absolute; left: 942px; top: 642px; width: 56px; height: 56px; box-sizing: border-box; border-radius: 50%; background: #3a2416; border: 3px solid #ff8a3d; box-shadow: 0 0 0 10px rgba(255, 138, 61, 0.18); display: flex; align-items: center; justify-content: center">
+      <svg width="26" height="26" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 C16 7 18 11 16 16 C15 19 9 19 8 16 C6.5 12 9 9 12 2 Z" fill="#ffd43b" stroke="#ff8a3d" stroke-width="1.5"></path></svg>
+    </div>
+
+    <!-- Vision example -->
+    <div style="position: absolute; left: 110px; top: 250px; width: 440px; height: 440px; box-sizing: border-box; border-radius: 50%; border: 2px dashed rgba(255, 212, 59, 0.6)"></div>
+    <p style="position: absolute; left: 300px; top: 694px; margin: 0; font-size: 12px; color: #ffe38a">your vision: 220 px, walls block it</p>
+
+    <!-- Players (style A) -->
+    <svg style="position: absolute; left: 316px; top: 456px" width="28" height="28" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="42" fill="#3d7bff" stroke="#11131a" stroke-width="3"></circle><ellipse cx="72" cy="50" rx="9" ry="17" fill="#0d1f4a"></ellipse><circle cx="48" cy="50" r="24" fill="#16316f"></circle><circle cx="48" cy="50" r="5" fill="#ffd43b"></circle></svg>
+    <svg style="position: absolute; left: 416px; top: 346px" width="28" height="28" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="42" fill="#3d7bff" stroke="#11131a" stroke-width="3"></circle><ellipse cx="72" cy="50" rx="9" ry="17" fill="#0d1f4a"></ellipse><circle cx="48" cy="50" r="24" fill="#16316f"></circle><circle cx="48" cy="50" r="5" fill="#ffd43b"></circle></svg>
+    <svg style="position: absolute; left: 546px; top: 606px" width="28" height="28" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="42" fill="#3d7bff" stroke="#11131a" stroke-width="3"></circle><ellipse cx="72" cy="50" rx="9" ry="17" fill="#0d1f4a"></ellipse><circle cx="48" cy="50" r="24" fill="#16316f"></circle><circle cx="48" cy="50" r="5" fill="#ffd43b"></circle></svg>
+    <svg style="position: absolute; left: 1086px; top: 456px; transform: rotate(180deg)" width="28" height="28" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="42" fill="#ff9a3c" stroke="#11131a" stroke-width="3"></circle><path d="M28 50 L12 40 L16 50 L12 60 Z" fill="#d9412b"></path><circle cx="50" cy="50" r="24" fill="#2a2a33"></circle><circle cx="50" cy="50" r="20" fill="none" stroke="#d9412b" stroke-width="6"></circle></svg>
+    <svg style="position: absolute; left: 886px; top: 316px; transform: rotate(180deg)" width="28" height="28" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="42" fill="#ff9a3c" stroke="#11131a" stroke-width="3"></circle><path d="M28 50 L12 40 L16 50 L12 60 Z" fill="#d9412b"></path><circle cx="50" cy="50" r="24" fill="#2a2a33"></circle><circle cx="50" cy="50" r="20" fill="none" stroke="#d9412b" stroke-width="6"></circle></svg>
+    <svg style="position: absolute; left: 1166px; top: 586px; transform: rotate(180deg)" width="28" height="28" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="42" fill="#ff9a3c" stroke="#11131a" stroke-width="3"></circle><path d="M28 50 L12 40 L16 50 L12 60 Z" fill="#d9412b"></path><circle cx="50" cy="50" r="24" fill="#2a2a33"></circle><circle cx="50" cy="50" r="20" fill="none" stroke="#d9412b" stroke-width="6"></circle></svg>
+  </div>
+
+  <!-- Legend -->
+  <div style="display: flex; flex-wrap: wrap; gap: 28px; align-items: center; font-size: 14px; color: #d6d9e3">
+    <span style="display: flex; align-items: center; gap: 8px"><span style="width: 22px; height: 16px; background: #3a3e4c; border-radius: 3px; border-top: 3px solid #4b5062"></span>Building / wall: blocks movement and vision</span>
+    <span style="display: flex; align-items: center; gap: 8px"><span style="width: 22px; height: 12px; background: #8a5a3c; border-radius: 3px"></span>Cart (thela)</span>
+    <span style="display: flex; align-items: center; gap: 8px"><span style="width: 18px; height: 18px; border-radius: 50%; background: #2f6b46; border: 3px solid #3f8a5a; box-sizing: border-box"></span>Tree</span>
+    <span style="display: flex; align-items: center; gap: 8px"><span style="width: 22px; height: 14px; background: #2f8a8a; border-radius: 3px"></span>Chai stall</span>
+    <span style="display: flex; align-items: center; gap: 8px"><span style="width: 18px; height: 18px; border-radius: 50%; background: #3a2416; border: 3px solid #ff8a3d; box-sizing: border-box"></span>Fireplace (angithi)</span>
+    <span style="display: flex; align-items: center; gap: 8px"><span style="width: 18px; height: 18px; border-radius: 50%; border: 2px dashed #ffd43b; box-sizing: border-box"></span>Middle zone / vision</span>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1600,"height":1010}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

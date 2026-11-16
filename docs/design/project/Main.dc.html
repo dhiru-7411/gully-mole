@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Characters: three styles</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Space+Grotesk:wght@600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#ffd43b}a:hover{color:#ffe680}
+</style>
+</helmet>
+<div style="width: 1280px; height: 720px; box-sizing: border-box; padding: 48px 56px; background: #1b1d24; color: #f1f2f6; font-family: Inter, system-ui, sans-serif; display: flex; flex-direction: column; gap: 28px">
+
+  <div style="display: flex; flex-direction: column; gap: 8px">
+    <h1 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 40px; letter-spacing: -0.5px">Characters: pick a style</h1>
+    <p style="margin: 0; color: #a7adc0; font-size: 17px; max-width: 900px">Seen from above. Police is blue, Chor is orange. Every character faces right here; the hat's front shows where they're heading. The small row shows real in-game size on a phone.</p>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; flex-grow: 1">
+
+    <!-- Style A -->
+    <section style="background: #262934; border: 1px solid #3a3e4c; border-radius: 18px; padding: 24px; display: flex; flex-direction: column; gap: 18px">
+      <div style="display: flex; align-items: baseline; gap: 12px">
+        <span style="font-family: 'Space Grotesk', sans-serif; font-size: 30px; font-weight: 700; color: #ffd43b">A</span>
+        <h2 style="margin: 0; font-size: 21px; font-weight: 600">Caps &amp; bandanas</h2>
+      </div>
+      <div style="display: flex; justify-content: space-around; align-items: center">
+        <figure style="margin: 0; display: flex; flex-direction: column; align-items: center; gap: 8px">
+          <svg width="120" height="120" viewBox="0 0 100 100" role="img" aria-label="Police, style A: blue body, navy peaked cap">
+            <circle cx="50" cy="50" r="42" fill="#3d7bff" stroke="#11131a" stroke-width="3"></circle>
+            <ellipse cx="72" cy="50" rx="9" ry="17" fill="#0d1f4a"></ellipse>
+            <circle cx="48" cy="50" r="24" fill="#16316f"></circle>
+            <circle cx="48" cy="50" r="5" fill="#ffd43b"></circle>
+          </svg>
+          <figcaption style="font-size: 14px; color: #a7adc0">Police</figcaption>
+        </figure>
+        <figure style="margin: 0; display: flex; flex-direction: column; align-items: center; gap: 8px">
+          <svg width="120" height="120" viewBox="0 0 100 100" role="img" aria-label="Chor, style A: orange body, dark head with red bandana">
+            <circle cx="50" cy="50" r="42" fill="#ff9a3c" stroke="#11131a" stroke-width="3"></circle>
+            <path d="M28 50 L12 40 L16 50 L12 60 Z" fill="#d9412b"></path>
+            <circle cx="50" cy="50" r="24" fill="#2a2a33"></circle>
+            <circle cx="50" cy="50" r="20" fill="none" stroke="#d9412b" stroke-width="6"></circle>
+          </svg>
+          <figcaption style="font-size: 14px; color: #a7adc0">Chor</figcaption>
+        </figure>
+      </div>
+      <div style="display: flex; gap: 14px; align-items: center; justify-content: center; background: #23262f; border-radius: 12px; padding: 14px">
+        <svg width="28" height="28" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="42" fill="#3d7bff" stroke="#11131a" stroke-width="3"></circle><ellipse cx="72" cy="50" rx="9" ry="17" fill="#0d1f4a"></ellipse><circle cx="48" cy="50" r="24" fill="#16316f"></circle><circle cx="48" cy="50" r="5" fill="#ffd43b"></circle></svg>
+        <svg width="28" height="28" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="42" fill="#3d7bff" stroke="#11131a" stroke-width="3"></circle><ellipse cx="72" cy="50" rx="9" ry="17" fill="#0d1f4a"></ellipse><circle cx="48" cy="50" r="24" fill="#16316f"></circle><circle cx="48" cy="50" r="5" fill="#ffd43b"></circle></svg>
+        <svg width="28" height="28" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="42" fill="#ff9a3c" stroke="#11131a" stroke-width="3"></circle><path d="M28 50 L12 40 L16 50 L12 60 Z" fill="#d9412b"></path><circle cx="50" cy="50" r="24" fill="#2a2a33"></circle><circle cx="50" cy="50" r="20" fill="none" stroke="#d9412b" stroke-width="6"></circle></svg>
+        <svg width="28" height="28" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="42" fill="#ff9a3c" stroke="#11131a" stroke-width="3"></circle><path d="M28 50 L12 40 L16 50 L12 60 Z" fill="#d9412b"></path><circle cx="50" cy="50" r="24" fill="#2a2a33"></circle><circle cx="50" cy="50" r="20" fill="none" stroke="#d9412b" stroke-width="6"></circle></svg>
+        <span style="font-size: 13px; color: #a7adc0">in-game size</span>
+      </div>
+      <ul style="margin: 0; padding-left: 18px; font-size: 15px; line-height: 1.55; color: #d6d9e3">
+        <li>Feels like a real street game: cops and thieves</li>
+        <li>Hat shows which way you face</li>
+        <li>Plenty of room for freeze overlays</li>
+      </ul>
+    </section>
+
+    <!-- Style B -->
+    <section style="background: #262934; border: 1px solid #3a3e4c; border-radius: 18px; padding: 24px; display: flex; flex-direction: column; gap: 18px">
+      <div style="display: flex; align-items: baseline; gap: 12px">
+        <span style="font-family: 'Space Grotesk', sans-serif; font-size: 30px; font-weight: 700; color: #ffd43b">B</span>
+        <h2 style="margin: 0; font-size: 21px; font-weight: 600">Board-game tokens</h2>
+      </div>
+      <div style="display: flex; justify-content: space-around; align-items: center">
+        <figure style="margin: 0; display: flex; flex-direction: column; align-items: center; gap: 8px">
+          <svg width="120" height="120" viewBox="0 0 100 100" role="img" aria-label="Police, style B: blue token with a shield icon">
+            <circle cx="50" cy="50" r="42" fill="#3d7bff" stroke="#11131a" stroke-width="3"></circle>
+            <circle cx="50" cy="50" r="33" fill="none" stroke="#ffffff" stroke-opacity="0.55" stroke-width="2.5"></circle>
+            <path d="M50 30 L65 36 V50 C65 60 58 66 50 70 C42 66 35 60 35 50 V36 Z" fill="none" stroke="#ffffff" stroke-width="4" stroke-linejoin="round"></path>
+            <path d="M96 50 L86 43 L86 57 Z" fill="#ffffff"></path>
+          </svg>
+          <figcaption style="font-size: 14px; color: #a7adc0">Police</figcaption>
+        </figure>
+        <figure style="margin: 0; display: flex; flex-direction: column; align-items: center; gap: 8px">
+          <svg width="120" height="120" viewBox="0 0 100 100" role="img" aria-label="Chor, style B: orange token with a mask icon">
+            <circle cx="50" cy="50" r="42" fill="#ff9a3c" stroke="#11131a" stroke-width="3"></circle>
+            <circle cx="50" cy="50" r="33" fill="none" stroke="#11131a" stroke-opacity="0.45" stroke-width="2.5"></circle>
+            <path d="M28 46 C28 39 39 37 50 42 C61 37 72 39 72 46 C72 57 63 61 57 57 C54 55 46 55 43 57 C37 61 28 57 28 46 Z" fill="#1b1d24"></path>
+            <circle cx="40" cy="48" r="4.5" fill="#ff9a3c"></circle>
+            <circle cx="60" cy="48" r="4.5" fill="#ff9a3c"></circle>
+            <path d="M96 50 L86 43 L86 57 Z" fill="#1b1d24"></path>
+          </svg>
+          <figcaption style="font-size: 14px; color: #a7adc0">Chor</figcaption>
+        </figure>
+      </div>
+      <div style="display: flex; gap: 14px; align-items: center; justify-content: center; background: #23262f; border-radius: 12px; padding: 14px">
+        <svg width="28" height="28" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="42" fill="#3d7bff" stroke="#11131a" stroke-width="3"></circle><path d="M50 30 L65 36 V50 C65 60 58 66 50 70 C42 66 35 60 35 50 V36 Z" fill="none" stroke="#ffffff" stroke-width="6" stroke-linejoin="round"></path><path d="M96 50 L86 43 L86 57 Z" fill="#ffffff"></path></svg>
+        <svg width="28" height="28" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="42" fill="#3d7bff" stroke="#11131a" stroke-width="3"></circle><path d="M50 30 L65 36 V50 C65 60 58 66 50 70 C42 66 35 60 35 50 V36 Z" fill="none" stroke="#ffffff" stroke-width="6" stroke-linejoin="round"></path><path d="M96 50 L86 43 L86 57 Z" fill="#ffffff"></path></svg>
+        <svg width="28" height="28" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="42" fill="#ff9a3c" stroke="#11131a" stroke-width="3"></circle><path d="M28 46 C28 39 39 37 50 42 C61 37 72 39 72 46 C72 57 63 61 57 57 C54 55 46 55 43 57 C37 61 28 57 28 46 Z" fill="#1b1d24"></path><path d="M96 50 L86 43 L86 57 Z" fill="#1b1d24"></path></svg>
+        <svg width="28" height="28" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="42" fill="#ff9a3c" stroke="#11131a" stroke-width="3"></circle><path d="M28 46 C28 39 39 37 50 42 C61 37 72 39 72 46 C72 57 63 61 57 57 C54 55 46 55 43 57 C37 61 28 57 28 46 Z" fill="#1b1d24"></path><path d="M96 50 L86 43 L86 57 Z" fill="#1b1d24"></path></svg>
+        <span style="font-size: 13px; color: #a7adc0">in-game size</span>
+      </div>
+      <ul style="margin: 0; padding-left: 18px; font-size: 15px; line-height: 1.55; color: #d6d9e3">
+        <li>Cleanest and most minimal</li>
+        <li>Icons read clearly even when tiny</li>
+        <li>Less character, more "game piece"</li>
+      </ul>
+    </section>
+
+    <!-- Style C -->
+    <section style="background: #262934; border: 1px solid #3a3e4c; border-radius: 18px; padding: 24px; display: flex; flex-direction: column; gap: 18px">
+      <div style="display: flex; align-items: baseline; gap: 12px">
+        <span style="font-family: 'Space Grotesk', sans-serif; font-size: 30px; font-weight: 700; color: #ffd43b">C</span>
+        <h2 style="margin: 0; font-size: 21px; font-weight: 600">Blobs with eyes</h2>
+      </div>
+      <div style="display: flex; justify-content: space-around; align-items: center">
+        <figure style="margin: 0; display: flex; flex-direction: column; align-items: center; gap: 8px">
+          <svg width="120" height="120" viewBox="0 0 100 100" role="img" aria-label="Police, style C: blue blob with eyes and a peaked cap">
+            <circle cx="50" cy="56" r="38" fill="#3d7bff" stroke="#11131a" stroke-width="3"></circle>
+            <rect x="27" y="10" width="46" height="18" rx="7" fill="#16316f"></rect>
+            <rect x="24" y="24" width="58" height="7" rx="3.5" fill="#0d1f4a"></rect>
+            <circle cx="50" cy="18" r="4" fill="#ffd43b"></circle>
+            <circle cx="58" cy="52" r="9" fill="#ffffff"></circle>
+            <circle cx="77" cy="52" r="9" fill="#ffffff"></circle>
+            <circle cx="62" cy="52" r="4.5" fill="#11131a"></circle>
+            <circle cx="81" cy="52" r="4.5" fill="#11131a"></circle>
+          </svg>
+          <figcaption style="font-size: 14px; color: #a7adc0">Police</figcaption>
+        </figure>
+        <figure style="margin: 0; display: flex; flex-direction: column; align-items: center; gap: 8px">
+          <svg width="120" height="120" viewBox="0 0 100 100" role="img" aria-label="Chor, style C: orange blob with an eye mask and a beanie">
+            <circle cx="50" cy="56" r="38" fill="#ff9a3c" stroke="#11131a" stroke-width="3"></circle>
+            <path d="M26 30 A24 22 0 0 1 74 30 Z" fill="#2a2a33"></path>
+            <rect x="26" y="25" width="48" height="6" fill="#d9412b"></rect>
+            <rect x="46" y="43" width="44" height="18" rx="9" fill="#1b1d24"></rect>
+            <circle cx="58" cy="52" r="7" fill="#ffffff"></circle>
+            <circle cx="77" cy="52" r="7" fill="#ffffff"></circle>
+            <circle cx="61" cy="52" r="3.5" fill="#11131a"></circle>
+            <circle cx="80" cy="52" r="3.5" fill="#11131a"></circle>
+          </svg>
+          <figcaption style="font-size: 14px; color: #a7adc0">Chor</figcaption>
+        </figure>
+      </div>
+      <div style="display: flex; gap: 14px; align-items: center; justify-content: center; background: #23262f; border-radius: 12px; padding: 14px">
+        <svg width="28" height="28" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="56" r="38" fill="#3d7bff" stroke="#11131a" stroke-width="3"></circle><rect x="27" y="10" width="46" height="18" rx="7" fill="#16316f"></rect><rect x="24" y="24" width="58" height="7" rx="3.5" fill="#0d1f4a"></rect><circle cx="58" cy="52" r="9" fill="#ffffff"></circle><circle cx="77" cy="52" r="9" fill="#ffffff"></circle><circle cx="62" cy="52" r="4.5" fill="#11131a"></circle><circle cx="81" cy="52" r="4.5" fill="#11131a"></circle></svg>
+        <svg width="28" height="28" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="56" r="38" fill="#3d7bff" stroke="#11131a" stroke-width="3"></circle><rect x="27" y="10" width="46" height="18" rx="7" fill="#16316f"></rect><rect x="24" y="24" width="58" height="7" rx="3.5" fill="#0d1f4a"></rect><circle cx="58" cy="52" r="9" fill="#ffffff"></circle><circle cx="77" cy="52" r="9" fill="#ffffff"></circle><circle cx="62" cy="52" r="4.5" fill="#11131a"></circle><circle cx="81" cy="52" r="4.5" fill="#11131a"></circle></svg>
+        <svg width="28" height="28" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="56" r="38" fill="#ff9a3c" stroke="#11131a" stroke-width="3"></circle><path d="M26 30 A24 22 0 0 1 74 30 Z" fill="#2a2a33"></path><rect x="46" y="43" width="44" height="18" rx="9" fill="#1b1d24"></rect><circle cx="58" cy="52" r="7" fill="#ffffff"></circle><circle cx="77" cy="52" r="7" fill="#ffffff"></circle></svg>
+        <svg width="28" height="28" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="56" r="38" fill="#ff9a3c" stroke="#11131a" stroke-width="3"></circle><path d="M26 30 A24 22 0 0 1 74 30 Z" fill="#2a2a33"></path><rect x="46" y="43" width="44" height="18" rx="9" fill="#1b1d24"></rect><circle cx="58" cy="52" r="7" fill="#ffffff"></circle><circle cx="77" cy="52" r="7" fill="#ffffff"></circle></svg>
+        <span style="font-size: 13px; color: #a7adc0">in-game size</span>
+      </div>
+      <ul style="margin: 0; padding-left: 18px; font-size: 15px; line-height: 1.55; color: #d6d9e3">
+        <li>Most personality: funny for roasts</li>
+        <li>Eyes look where you walk</li>
+        <li>Busier, so freeze overlays must be bold</li>
+      </ul>
+    </section>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":720}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>
