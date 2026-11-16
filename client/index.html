@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+    <meta name="theme-color" content="#1b1d24" />
+    <title>Gully Mole</title>
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <!-- Home: pick a nickname, then create or join -->
+    <section id="screen-home" class="screen">
+      <h1 class="logo">Gully <span>Mole</span></h1>
+      <p class="tagline">Police vs Chor. One object. A spy on every team.</p>
+
+      <label class="field">
+        <span>Nickname</span>
+        <input id="nickname" maxlength="14" autocomplete="nickname" placeholder="e.g. Ravi" />
+      </label>
+
+      <button id="btn-create" class="btn primary">Create room</button>
+
+      <div class="divider"><span>or join a friend</span></div>
+
+      <div class="row">
+        <input id="code" inputmode="numeric" pattern="[0-9]*" maxlength="4" placeholder="4-digit code" class="code-input" />
+        <button id="btn-join" class="btn">Join</button>
+      </div>
+    </section>
+
+    <!-- Lobby: code, player list, host controls -->
+    <section id="screen-lobby" class="screen hidden">
+      <p class="label">Room code</p>
+      <button id="room-code" class="room-code" title="Copy invite link">----</button>
+      <p class="hint" id="copy-hint">Tap the code to copy an invite link</p>
+
+      <p class="label">Players: <span id="player-count">0</span> · need <span id="min-players">8</span></p>
+      <ul id="player-list" class="player-list"></ul>
+
+      <div id="host-controls" class="hidden">
+        <div id="bot-controls" class="row hidden">
+          <button id="btn-add-bot" class="btn small">+1 bot</button>
+          <button id="btn-fill-bots" class="btn small">Fill with bots</button>
+        </div>
+        <button id="btn-start" class="btn primary">Start game</button>
+      </div>
+      <p id="waiting-host" class="hint hidden">Waiting for the host to start…</p>
+
+      <button id="btn-leave" class="btn ghost">Leave room</button>
+    </section>
+
+    <!-- Game: Phaser draws here -->
+    <div id="game" class="hidden"></div>
+
+    <div id="toast" class="toast hidden"></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

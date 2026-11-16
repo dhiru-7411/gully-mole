@@ -24,3 +24,14 @@ Rulings on GDD rules that were unclear or conflicting. The GDD stays the source 
 | D11 | Detective notification | Includes a ping on the map at the frozen teammate's position. |
 | D12 | Tagging the spy | The spy's real team can tag them under the normal tagging rules. |
 | D13 | Repo | Local git in `~/gully-mole`. A GitHub remote is added at M6 (deploy). |
+
+## Made during M0 (tell me if you disagree)
+
+| # | Topic | Decision |
+| --- | --- | --- |
+| D14 | Phaser version | The kickoff says "Phaser 3", but it also says to use current stable versions. Phaser 4.2.1 is the current stable release, and its API is nearly the same as Phaser 3's, so we use Phaser 4. |
+| D15 | Room codes | 1000–9999 (no leading zero, so they read clearly over a call). The code is the Colyseus room id. |
+| D16 | Joining mid-round | Not allowed: the room locks when the host starts. Players who drop out can rejoin their own seat (refresh-safe) for 5 min during a round, or 20 s in the lobby. |
+| D17 | Host leaves | Host passes to the earliest-joined human who is still connected. Bots never host. |
+| D18 | Dev bots | Bots count toward the 8-player minimum. Allowed unless `NODE_ENV=production` (override: `ALLOW_BOTS=true`). |
+| D19 | Max players | 20 per room for now (configurable). |
