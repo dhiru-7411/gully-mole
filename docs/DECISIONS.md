@@ -22,7 +22,7 @@ Rulings on GDD rules that were unclear or conflicting. The GDD stays the source 
 | D9 | Shame drag | A teammate next to the Detective holds a "drag" button and moves at about 50% speed (configurable). |
 | D10 | Frozen players | Can still use quick messages, the whisper channel and huddle chat. |
 | D11 | Detective notification | Includes a ping on the map at the frozen teammate's position. |
-| D12 | Tagging the spy | The spy's real team can tag them under the normal tagging rules. |
+| D12 | Tagging the spy | ~~The spy's real team can tag them under the normal tagging rules.~~ **Replaced by D54.** |
 | D13 | Repo | Local git in `~/gully-mole`. A GitHub remote is added at M6 (deploy). |
 
 ## Made during M0 (tell me if you disagree)
@@ -78,4 +78,5 @@ Rulings on GDD rules that were unclear or conflicting. The GDD stays the source 
 | D51 | What blocks sight | Buildings, carts, chai stalls and trees. Fireplaces are low and don't. |
 | D52 | Easy bots (dev) | A lobby switch, on by default: bots never grab or snatch the potli, so one person can test roles without bots ending the round in seconds. |
 | D53 | Closer camera, tighter vision (owner) | Camera view height goes from 650 to **520** (zoomed in about 25%). Vision radius goes from 300 to **230** for Normal players and Leaders, and **280** for Detectives and spies, who hunt and sneak. The iced hand shows within 140. This replaces the numbers in D22–D23. Everything is tunable in `shared/src/config.ts`. |
+| D54 | Your own spy (owner playtest) | **A team can't tag the spy it planted.** They look like an enemy, but the team knows they're its own (GDD), so freezing them only hurt that team, and bots kept doing it. The spy can still tag their real team to look loyal (D44). The sitting team can't tag the spy (same team), so only the Detective's arrest stops a spy. |
 | D30 | Joystick | A floating joystick on the left 60% of the screen, analog (push further = faster), with a small deadzone. The right side is kept free for action buttons. |

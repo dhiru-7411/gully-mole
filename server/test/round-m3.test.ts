@@ -168,6 +168,20 @@ describe("secret unfreeze and the silent pass", () => {
   });
 });
 
+describe("your own planted spy (D54)", () => {
+  it("the team that planted a spy can't tag them, even on its own half", () => {
+    const { round, P, place, scatter } = setup();
+    scatter();
+    place("b2", GREEN_SIDE); // Green's spy (sits in Blue) wanders onto the Green half
+    place("g3", GREEN_SIDE, 40);
+    expect(round.act("g3", { kind: "tag", targetId: "b2" })).toBe(false);
+    expect(P("b2").frozen).toBe(false);
+    // A real Blue player in the same spot gets tagged as usual.
+    place("b3", GREEN_SIDE, 0, 40);
+    expect(round.act("g3", { kind: "tag", targetId: "b3" })).toBe(true);
+  });
+});
+
 describe("the Detective", () => {
   it("is pinged when a teammate gets frozen", () => {
     const { round, place, scatter } = setup();

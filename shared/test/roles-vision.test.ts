@@ -10,6 +10,7 @@ import {
   canIce,
   canPass,
   canSee,
+  canTag,
   canUnfreeze,
   clearSight,
   nearFireplace,
@@ -143,6 +144,17 @@ describe("spy", () => {
     expect(canFree(spy, base("g", "green", 1540, { frozen: true, freeze: "ice" }))).toBe(true);
     expect(canFree(spy, base("b", "blue", 1540, { frozen: true, freeze: "ice" }))).toBe(false);
     expect(canFree(spy, base("g", "green", 1540, { frozen: true, freeze: "out" }))).toBe(false);
+  });
+
+  it("its real team can't tag it (D54), but the spy can still tag them for cover (D44)", () => {
+    // spy: Green's spy sitting in Blue, standing on the GREEN half.
+    const greenPlayer = base("g", "green", 1540);
+    expect(canTag(greenPlayer, spy)).toBe(false);
+    // A normal Blue player on the Green half is fair game as usual.
+    expect(canTag(greenPlayer, base("b", "blue", 1500))).toBe(true);
+    // On the Blue half, the spy may tag a Green intruder (looks loyal).
+    const spyHome = { ...spy, x: 900 };
+    expect(canTag(spyHome, base("g", "green", 940))).toBe(true);
   });
 
   it("can pass silently to the real team; normal players can't pass to enemies", () => {

@@ -66,12 +66,18 @@ const isSpy = (p: RulePlayer) => p.secretRole === "spy";
 
 // ---------------------------------------------------------------- smart button
 
-/** Tag: freeze an enemy who is standing on YOUR half (D1), within reach. */
+/**
+ * Tag: freeze an enemy who is standing on YOUR half (D1), within reach.
+ * You can't tag the spy YOUR team planted: they look like an enemy, but your
+ * team knows they're yours (GDD), so freezing them would only hurt you (D54).
+ */
 export function canTag(me: RulePlayer, target: RulePlayer): boolean {
+  const myOwnSpy = target.secretRole === "spy" && realTeamOf(target) === realTeamOf(me);
   return (
     !me.frozen &&
     !target.frozen &&
     !target.protected &&
+    !myOwnSpy &&
     target.team !== me.team &&
     target.team !== "" &&
     halfAt(target.x) === me.team &&
