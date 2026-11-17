@@ -47,3 +47,12 @@ Rulings on GDD rules that were unclear or conflicting. The GDD stays the source 
 | D24 | Out view | A player who is Out keeps their own camera on their frozen blob, with normal vision. No spectating teammates, so nobody can leak info over voice. |
 | D25 | Fog | Outside your vision the map is dimmed: walls and lanes stay visible. Players, the potli and clues are hidden, and the server never sends them. |
 | D26 | Team names | Not final. "Blue" and "Green" are placeholders, kept in one place in `shared/src/config.ts` so a rename is a one-line change. |
+
+## Made during M1 (tell me if you disagree)
+
+| # | Topic | Decision |
+| --- | --- | --- |
+| D27 | Blobs and each other | Blobs pass through each other; only the map blocks movement. That way nobody can block a lane by standing in it, and a team can't body-wall its den. Tagging (M2) is about touching, not bumping. |
+| D28 | Map gaps | Every open gap between obstacles is at least one blob (44) wide, so nobody gets wedged. That meant moving 4 trees from the design preview (plus their Green twins). A test enforces the rule. |
+| D29 | Speed | 220 units/s, so crossing the map takes about 11 s. Easy to tune in `config.ts`. |
+| D30 | Joystick | A floating joystick on the left 60% of the screen, analog (push further = faster), with a small deadzone. The right side is kept free for action buttons. |

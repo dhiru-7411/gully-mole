@@ -33,7 +33,7 @@ A gold **potli** (pouch) `#FFD43B`.
 - Middle zone: a circle at the center `(1200, 675)`, radius 150. The potli starts there.
 - 24 buildings, 8 carts (thelas), 4 chai stalls, 12 trees, 2 fireplaces (angithi).
 - Each half is the other turned 180° around the center: point `(x, y)` mirrors to `(2400 − x, 1350 − y)`.
-- Exact coordinates: `docs/design/project/Map.dc.html`. M1 copies them into `shared/` as map data, because the server needs the walls for collisions and line of sight.
+- **The source of truth is now `shared/src/map.ts`.** The server uses it for collisions (and later line of sight), and the client draws from it. In M1, 4 trees moved slightly from the design preview so every gap is at least one blob wide (DECISIONS D28).
 
 ## Sizes and camera
 

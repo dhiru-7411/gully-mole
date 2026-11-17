@@ -4,7 +4,7 @@
  * The lobby simply re-renders from the server state whenever it changes. With
  * at most 20 players that's instant and much simpler than patching the DOM.
  */
-import { CONFIG, ClientMsg, Phase, ServerMsg, cleanNickname, isValidRoomCode } from "@gully/shared";
+import { CONFIG, ClientMsg, Phase, ServerMsg, cleanNickname, isValidRoomCode, type Team } from "@gully/shared";
 import { createRoom, forget, friendlyError, joinRoom, tryReconnect, type GameRoom } from "./net";
 import { startGame } from "./game/GameScene";
 
@@ -88,6 +88,8 @@ function setBusy(busy: boolean) {
 
 function attach(r: GameRoom) {
   room = r;
+  // Dev only: lets you poke at the room from the browser console (window.__gully.room.state).
+  if (import.meta.env.DEV) (window as any).__gully = { room: r };
   history.replaceState(null, "", `?code=${r.roomId}`);
 
   r.onStateChange(() => render());
@@ -109,6 +111,7 @@ function render() {
     if (!gameStarted) {
       gameStarted = true;
       show("game");
+      showHud();
       startGame(ui.game, room);
     }
     return;
@@ -169,6 +172,21 @@ ui.roomCode.addEventListener("click", async () => {
     /* user cancelled share sheet */
   }
 });
+
+/** "You're on Blue" badge + a controls hint that fades after a few seconds. */
+function showHud() {
+  const me = room?.state.players.get(room.sessionId);
+  const team = me?.team as Team | undefined;
+  const badge = $("hud-team");
+  if (team) {
+    badge.innerHTML = `<span class="dot" style="background:${team === "blue" ? "#4a83ff" : "#3fd17a"}"></span>`;
+    badge.append(`You're on ${CONFIG.teams.names[team]}`);
+  }
+  const hint = $("hud-hint");
+  const touch = matchMedia("(pointer: coarse)").matches;
+  hint.textContent = touch ? "Drag on the left side to move" : "WASD or arrow keys to move";
+  setTimeout(() => hint.classList.add("faded"), 8000);
+}
 
 // --------------------------------------------------------------- helpers
 

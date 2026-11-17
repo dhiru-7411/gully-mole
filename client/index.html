@@ -50,7 +50,13 @@
     </section>
 
     <!-- Game: Phaser draws here -->
-    <div id="game" class="hidden"></div>
+    <div id="game" class="hidden">
+      <div class="hud">
+        <span id="hud-team" class="team-badge"></span>
+        <span id="hud-hint" class="hud-hint"></span>
+      </div>
+      <div class="rotate-hint">Turn your phone sideways for a better view</div>
+    </div>
 
     <div id="toast" class="toast hidden"></div>
     <script type="module" src="/src/main.ts"></script>

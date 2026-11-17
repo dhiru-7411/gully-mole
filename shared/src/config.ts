@@ -29,16 +29,23 @@ export const CONFIG = {
     maxMinutes: 15,
   },
 
-  /** GDD team-size table: teams of 7+ get a second spy. (M3+) */
   teams: {
+    /** Display names (DECISIONS D26: not final; rename here only). */
+    names: { blue: "Blue", green: "Green" },
+    /** GDD team-size table: teams of 7+ get a second spy. (M3+) */
     secondSpyAtTeamSize: 7,
   },
 
-  /** (M1+) */
+  /** Server simulation + client prediction. */
   movement: {
+    /** Server steps per second. One client input = one step. */
     tickRate: 20,
-    playerSpeed: 160,
-    playerRadius: 14,
+    /** World units per second at full stick. Crossing the 2400-wide map takes ~11 s. */
+    playerSpeed: 220,
+    /** Blob radius (diameter 44, docs/ART.md). */
+    playerRadius: 22,
+    /** Joystick inputs smaller than this fraction are ignored (thumb wobble). */
+    deadzone: 0.15,
     /** Multiplier while the Leader carries the object and no teammate is frozen. */
     leaderCarrySpeedBonus: 1.25,
     /** Speed multiplier while dragging a Shame-frozen Detective (DECISIONS D9). */
@@ -47,7 +54,14 @@ export const CONFIG = {
 
   /** (M3+) Each player sees a circle of this radius, blocked by obstacles. */
   vision: {
-    radius: 220,
+    radius: 300,
+  },
+
+  /** Every screen shows this many world units of height (DECISIONS D23). */
+  camera: {
+    viewHeight: 650,
+    /** 0–1: how quickly the camera catches up with you (1 = locked on). */
+    followLerp: 0.2,
   },
 
   /** Max centre-to-centre distance for each interaction. (M2+) */
