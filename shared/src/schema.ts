@@ -1,12 +1,22 @@
 /**
  * The synced room state. The server owns it; Colyseus sends changes to clients.
  *
- * Rule of thumb: only put things here that EVERY client may see. Secrets
- * (Detective, spies, hidden positions) arrive in M3 using per-client views
- * (StateView), so they never reach a client that shouldn't know them.
- * The Leader is public (everyone can see who leads), so it lives here.
+ * PRIVACY (M3): each client has its own "view" (Colyseus StateView). Fields and
+ * collections marked `.view(...)` are only sent to clients whose view includes
+ * them. The server decides every tick (server/src/views.ts):
+ *  - `players` / `footprints` / `potli`: only what you can currently SEE
+ *    (vision circle + walls), everything in the lobby and after a round.
+ *  - TAG.SECRET fields (secret role, real team): only to people allowed to know.
+ *  - TAG.NEAR fields (the spy's iced hand): only to players standing close by.
+ * So a player can never find the spy by inspecting network traffic.
  */
 import { schema, t, type SchemaType } from "@colyseus/schema";
+
+/** View tags (powers of two). */
+export const TAG = {
+  SECRET: 1,
+  NEAR: 2,
+} as const;
 
 export const Phase = {
   Lobby: "lobby",
@@ -15,10 +25,28 @@ export const Phase = {
 } as const;
 export type Phase = (typeof Phase)[keyof typeof Phase];
 
-/** Public roles. Detective and Spy are secret and arrive in M3. */
+/** Public roles. Detective and Spy are secret (see `secretRole`). */
 export const Role = {
   Normal: "",
   Leader: "leader",
+} as const;
+
+/** Secret roles. */
+export const SecretRole = {
+  None: "",
+  Detective: "detective",
+  Spy: "spy",
+} as const;
+
+/** The three freeze looks (GDD). "" = not frozen. */
+export const Freeze = {
+  None: "",
+  /** Tagged by an enemy or the spy: light blue ice. Leader's lamp (or the spy) unfreezes. */
+  Ice: "ice",
+  /** Detective's wrong arrest: dark red ice. Teammates drag them to a fireplace, once. */
+  Shame: "shame",
+  /** Second wrong arrest, or a caught spy: grey cracked ice until the round ends. */
+  Out: "out",
 } as const;
 
 export const PlayerState = schema(
@@ -27,7 +55,7 @@ export const PlayerState = schema(
     nickname: t.string(),
     isBot: t.boolean().default(false),
     connected: t.boolean().default(true),
-    /** "blue" | "green" once a round starts; "" in the lobby. */
+    /** The team you SIT in: "blue" | "green" ("" in the lobby). A spy sits in the other team. */
     team: t.string().default(""),
     /** Public role: "leader" or "" (see Role). */
     role: t.string().default(""),
@@ -37,12 +65,30 @@ export const PlayerState = schema(
     /** Facing direction for the eyes, -127..127 each. */
     fx: t.int8().default(127),
     fy: t.int8().default(0),
-    /** Frozen in ice: can't move or act. */
+    /** Any kind of ice: can't move or act. */
     frozen: t.boolean().default(false),
+    /** Which ice: "ice" | "shame" | "out" | "" (see Freeze). */
+    freeze: t.string().default(""),
     /** Frozen Leader only: whole seconds until the lamp thaws them (GDD: ~10 s). */
     thawIn: t.uint8().default(0),
     /** Just-thawed Leader can't be frozen again for a moment. */
     protected: t.boolean().default(false),
+    /** A spy who was seen passing to the enemy: everyone sees "SPY". */
+    exposed: t.boolean().default(false),
+    /** Shame-frozen Detective: id of the teammate dragging them, or "". */
+    draggedBy: t.string().default(""),
+    /** Shame-frozen Detective: the one fireplace rescue was already used. */
+    rescueUsed: t.boolean().default(false),
+
+    // ---- secrets: only sent to people allowed to know (TAG.SECRET)
+    /** "detective" | "spy" | "" */
+    secretRole: t.string().default("").view(TAG.SECRET),
+    /** The team you really play for. Differs from `team` only for spies. */
+    realTeam: t.string().default("").view(TAG.SECRET),
+
+    // ---- clues only visible up close (TAG.NEAR)
+    /** The spy's hand, iced for ~20 s after a secret freeze (GDD). */
+    icedHand: t.boolean().default(false).view(TAG.NEAR),
   },
   "PlayerState",
 );
@@ -57,12 +103,24 @@ export const PotliState = schema(
     carrierId: t.string().default(""),
     /** Enemy currently snatching it from the carrier, or "". */
     snatcherId: t.string().default(""),
-    /** Seconds left on the snatch countdown (one decimal is plenty). */
+    /** Seconds left on the snatch countdown. */
     snatchLeft: t.number().default(0),
   },
   "PotliState",
 );
 export type PotliState = SchemaType<typeof PotliState>;
+
+/** One footprint left by a secret freeze. Anonymous (D7). */
+export const Footprint = schema(
+  {
+    x: t.number(),
+    y: t.number(),
+    /** Walking direction, radians. */
+    angle: t.number(),
+  },
+  "Footprint",
+);
+export type Footprint = SchemaType<typeof Footprint>;
 
 /**
  * One input frame from a client: joystick/keyboard axes, -127..127 each.
@@ -85,9 +143,14 @@ export const GameState = schema(
     hostId: t.string(),
     /** Whether the host may add dev bots (off in production). */
     botsAllowed: t.boolean().default(false),
-    /** Keyed by player id: the sessionId for humans, "bot-N" for bots. Map order = join order. */
-    players: t.map(PlayerState),
-    potli: t.ref(PotliState).default(() => new PotliState()),
+    /** Dev: easy bots never grab or snatch the potli, so you can test roles alone (D52). */
+    easyBots: t.boolean().default(true),
+    /** Keyed by player id. Filtered per client: you only receive who you can see. */
+    players: t.map(PlayerState).view(),
+    potli: t.ref(PotliState).default(() => new PotliState()).view(),
+    footprints: t.map(Footprint).view(),
+    /** How many players are in the room (the players map is filtered, so the lobby count lives here). */
+    playerCount: t.uint8().default(0),
     /** Whole seconds left in the round. */
     timeLeft: t.uint16().default(0),
     /** After a round: "blue" | "green" | "draw". */

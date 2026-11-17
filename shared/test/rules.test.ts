@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   CONFIG,
   MAP,
+  MAP_SCALE,
   bestAction,
   canGrab,
   canPass,
@@ -18,8 +19,8 @@ import {
   type RulePotli,
 } from "../src";
 
-const blueSpot = { x: 900, y: 675 }; // on the Blue half (x < 1200)
-const greenSpot = { x: 1500, y: 675 }; // on the Green half
+const blueSpot = { x: 900 * MAP_SCALE, y: 675 * MAP_SCALE }; // on the Blue half
+const greenSpot = { x: 1500 * MAP_SCALE, y: 675 * MAP_SCALE }; // on the Green half
 
 const p = (id: string, team: string, at: { x: number; y: number }, extra: Partial<RulePlayer> = {}): RulePlayer => ({
   id,

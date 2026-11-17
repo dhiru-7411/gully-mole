@@ -21,7 +21,18 @@ export type CircleKind = "tree" | "fireplace";
 export interface RectObstacle extends Rect { kind: RectKind }
 export interface CircleObstacle extends Circle { kind: CircleKind }
 
-export const WORLD = { width: 2400, height: 1350 } as const;
+/**
+ * The layout below is written in DESIGN units (the 2400 × 1350 design board)
+ * and scaled up by MAP_SCALE (D55, owner: "make the map feel big"). Blobs keep
+ * their size, so a bigger scale = longer trips and wider lanes.
+ */
+export const MAP_SCALE = 1.5;
+const S = MAP_SCALE;
+const sRect = <T extends Rect>(r: T): T => ({ ...r, x: r.x * S, y: r.y * S, w: r.w * S, h: r.h * S });
+const sCircle = <T extends Circle>(c: T): T => ({ ...c, x: c.x * S, y: c.y * S, r: c.r * S });
+const sPoint = (p: Point): Point => ({ x: p.x * S, y: p.y * S });
+
+export const WORLD = { width: 2400 * S, height: 1350 * S } as const;
 
 /** Turn a point / rect / circle 180° around the map centre. */
 export const mirrorPoint = (p: Point): Point => ({ x: WORLD.width - p.x, y: WORLD.height - p.y });
@@ -32,9 +43,9 @@ export const mirrorRect = <T extends Rect>(r: T): T => ({
 });
 export const mirrorCircle = <T extends Circle>(c: T): T => ({ ...c, ...mirrorPoint(c) });
 
-// ------------------------------------------------------------ blue half (x < 1200)
+// ------------------------------------------------ blue half, design units (x < 1200)
 
-const blueRects: RectObstacle[] = [
+const blueRects: RectObstacle[] = ([
   // buildings
   { kind: "building", x: 360, y: 80, w: 260, h: 170 },
   { kind: "building", x: 400, y: 330, w: 90, h: 220 },
@@ -61,11 +72,11 @@ const blueRects: RectObstacle[] = [
   // chai stalls
   { kind: "chai", x: 680, y: 1180, w: 100, h: 56 },
   { kind: "chai", x: 130, y: 300, w: 100, h: 56 },
-];
+] as RectObstacle[]).map(sRect);
 
 // Rule: gaps between obstacles are either closed or at least 44 (a blob) wide,
 // so nobody gets wedged. shared/test/map.test.ts checks this.
-const blueCircles: CircleObstacle[] = [
+const blueCircles: CircleObstacle[] = ([
   { kind: "tree", x: 160, y: 900, r: 32 },
   { kind: "tree", x: 580, y: 1010, r: 32 },
   { kind: "tree", x: 700, y: 385, r: 32 },
@@ -73,14 +84,14 @@ const blueCircles: CircleObstacle[] = [
   { kind: "tree", x: 1100, y: 1050, r: 32 },
   { kind: "tree", x: 200, y: 450, r: 32 },
   { kind: "fireplace", x: 720, y: 230, r: 40 },
-];
+] as CircleObstacle[]).map(sCircle);
 
 /** Like a goal: flat against the end line, centred, nothing behind it. */
-const blueDen: Rect = { x: 0, y: 535, w: 170, h: 280 };
+const blueDen: Rect = sRect({ x: 0, y: 535, w: 170, h: 280 });
 
 /** Spawn spots inside the den: 3 columns × 4 rows = 12 (max team is 10). */
 const blueSpawns: Point[] = [];
-for (const y of [575, 635, 695, 755]) for (const x of [40, 85, 130]) blueSpawns.push({ x, y });
+for (const y of [575, 635, 695, 755]) for (const x of [40, 85, 130]) blueSpawns.push(sPoint({ x, y }));
 
 // ---------------------------------------------------------------- the full map
 
@@ -89,7 +100,7 @@ export const MAP = {
   /** x < halfLine is the Blue half; x >= halfLine is the Green half. */
   halfLine: WORLD.width / 2,
   dens: { blue: blueDen, green: mirrorRect(blueDen) } as Record<Team, Rect>,
-  middleZone: { x: WORLD.width / 2, y: WORLD.height / 2, r: 150 } as Circle,
+  middleZone: { x: WORLD.width / 2, y: WORLD.height / 2, r: 150 * S } as Circle,
   spawns: { blue: blueSpawns, green: blueSpawns.map(mirrorPoint) } as Record<Team, Point[]>,
   rects: [...blueRects, ...blueRects.map(mirrorRect)],
   circles: [...blueCircles, ...blueCircles.map(mirrorCircle)],

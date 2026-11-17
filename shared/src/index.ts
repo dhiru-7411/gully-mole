@@ -4,5 +4,7 @@ export * from "./map";
 export * from "./movement";
 export * from "./teams";
 export * from "./rules";
+export * from "./vision";
+export * from "./roles";
 export * from "./schema";
 export * from "./messages";

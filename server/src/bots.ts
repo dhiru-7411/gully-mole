@@ -13,8 +13,12 @@
  * Whenever the smart button has something to do, the bot presses it.
  */
 import {
+  CONFIG,
   MAP,
   bestAction,
+  bestRoleAction,
+  canSee,
+  visionRadius,
   dist,
   enemyOf,
   goalDen,
@@ -25,6 +29,7 @@ import {
   type MoveCommand,
   type PlayerState,
   type Point,
+  type RoleAction,
   type Team,
 } from "@gully/shared";
 import { randomSpot, steer } from "./nav";
@@ -34,7 +39,13 @@ const IDLE: MoveCommand = { moveX: 0, moveY: 0 };
 export interface BotDecision {
   move: MoveCommand;
   action?: Action;
+  roleAction?: RoleAction;
   pass?: boolean;
+}
+
+function nearestFireplace(p: Point): Point {
+  const fires = MAP.circles.filter((c) => c.kind === "fireplace");
+  return fires.sort((a, b) => dist(p, a) - dist(p, b))[0];
 }
 
 export class BotBrain {
@@ -65,6 +76,58 @@ export class BotBrain {
       if (this.reactIn-- === 0) d.action = action;
     } else {
       this.reactIn = -1;
+    }
+
+    // Easy bots (D52) never take the potli, so a human can test roles without the bots winning.
+    if (s.easyBots && (d.action?.kind === "grab" || d.action?.kind === "snatch")) d.action = undefined;
+
+    // ---- role play (M3)
+    const roleAct = bestRoleAction(me, players);
+
+    // Dragging a shamed Detective: head for the nearest fire.
+    if (roleAct?.kind === "release") return { ...d, move: steer(me, nearestFireplace(me)) };
+    if (roleAct?.kind === "drag") d.roleAction = roleAct;
+    // A teammate Detective is shame-frozen: the closest free teammate goes to drag them.
+    const shamed = players.find((p) => p.team === team && p.freeze === "shame" && !p.draggedBy && !p.rescueUsed);
+    if (shamed && !d.roleAction) {
+      const helper = players
+        .filter((p) => p.team === team && !p.frozen && p.id !== shamed.id)
+        .sort((a, b) => dist(a, shamed) - dist(b, shamed))[0];
+      if (helper?.id === me.id && dist(me, shamed) < 900) return { ...d, move: steer(me, shamed) };
+    }
+
+    if (me.secretRole === "spy") {
+      const unwatched = (exceptId: string) =>
+        !players.some(
+          (w) => w.team === team && w.realTeam === team && !w.frozen && w.id !== exceptId && canSee(w, me, visionRadius(w)),
+        );
+      if (roleAct?.kind === "free" && unwatched("")) d.roleAction = roleAct;
+      if (roleAct?.kind === "ice" && unwatched(roleAct.targetId) && this.random() < 0.03) d.roleAction = roleAct;
+      // Fake loyalty only goes so far: usually don't tag our real teammates.
+      const tagTarget = d.action?.kind === "tag" ? s.players.get(d.action.targetId) : null;
+      if (tagTarget && tagTarget.realTeam === me.realTeam && this.random() < 0.7) d.action = undefined;
+
+      // Carrying as a spy: we can never score (D2). Get it to our real team.
+      if (carrier?.id === me.id) {
+        const mate = passTarget(me, players, potli);
+        if (mate && mate.team !== me.team) return { ...d, pass: true };
+        const friend = nearestOf(me, players, (p) => p.realTeam === me.realTeam && p.team !== team && !p.frozen);
+        if (friend) return { ...d, move: steer(me, friend) };
+        return { ...d, move: this.wander(me, team, tickRate, "attack") };
+      }
+    }
+
+    if (me.secretRole === "detective") {
+      // An iced hand up close is the big clue: chase and arrest.
+      const suspect = nearestOf(
+        me,
+        players,
+        (p) => p.team === team && p.id !== me.id && p.icedHand && dist(me, p) <= CONFIG.vision.nearRadius && canSee(me, p, visionRadius(me)),
+      );
+      if (suspect) {
+        if (roleAct?.kind === "arrest" && roleAct.targetId === suspect.id) d.roleAction = roleAct;
+        return { ...d, move: steer(me, suspect) };
+      }
     }
 
     // Carrying: into the enemy den. Pass if a defender is right on us and a mate is beside us.

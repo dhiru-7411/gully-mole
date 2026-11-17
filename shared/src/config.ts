@@ -40,8 +40,8 @@ export const CONFIG = {
   movement: {
     /** Server steps per second. One client input = one step. */
     tickRate: 20,
-    /** World units per second at full stick. Crossing the 2400-wide map takes ~11 s. */
-    playerSpeed: 220,
+    /** World units per second at full stick (D55: was 220). Crossing the 3600-wide map takes ~19 s. */
+    playerSpeed: 190,
     /** Blob radius (diameter 44, docs/ART.md). */
     playerRadius: 22,
     /** Joystick inputs smaller than this fraction are ignored (thumb wobble). */
@@ -57,14 +57,28 @@ export const CONFIG = {
     dragSpeedMultiplier: 0.5,
   },
 
-  /** (M3+) Each player sees a circle of this radius, blocked by obstacles. */
+  /** Each player sees a circle of this radius, blocked by obstacles (D53: owner tuned it down). */
   vision: {
-    radius: 300,
+    /** Normal players and Leaders. */
+    radius: 230,
+    /** Detectives and spies see a bit further: they're the ones hunting / sneaking (D53). */
+    roleRadius: 280,
+    /** The spy's iced hand is only visible this close (GDD: "visible only to players close by"). */
+    nearRadius: 140,
+  },
+
+  /** Footprints after a secret freeze (GDD: ~20 s). */
+  footprints: {
+    /** How long after the freeze the spy keeps leaving prints. */
+    trailSec: 4,
+    /** One print every this many seconds while trailing. */
+    everySec: 0.35,
   },
 
   /** Every screen shows this many world units of height (DECISIONS D23). */
   camera: {
-    viewHeight: 650,
+    /** Zoomed in (D53): was 650. Smaller = closer camera, less of the map on screen. */
+    viewHeight: 520,
     /** 0–1: how quickly the camera catches up with you (1 = locked on). */
     followLerp: 0.2,
   },

@@ -11,8 +11,8 @@ describe("map data", () => {
     expect(count("chai")).toBe(4);
     expect(count("tree")).toBe(12);
     expect(count("fireplace")).toBe(2);
-    expect(MAP.width).toBe(2400);
-    expect(MAP.height).toBe(1350);
+    expect(MAP.width).toBe(3600);
+    expect(MAP.height).toBe(2025);
   });
 
   it("is fair: every obstacle has a twin turned 180°", () => {

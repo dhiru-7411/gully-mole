@@ -25,7 +25,41 @@ export const ClientMsg = {
   Pass: "pass",
   /** Host only, after a round ends: everyone back to the lobby. */
   BackToLobby: "backToLobby",
+  /** The role button (D42): arrest / ice / free / drag / release. Payload: RoleActionPayload. */
+  RoleAction: "roleAction",
+  /** Spy only: a short private message to their real team. Payload: string. */
+  Whisper: "whisper",
+  /** Host only, lobby, dev: turn easy bots on/off. Payload: boolean. */
+  SetEasyBots: "setEasyBots",
 } as const;
+
+export interface RoleActionPayload {
+  kind: string;
+  targetId: string;
+}
+
+/** Server -> client events (besides Notice). */
+export const ServerEvent = {
+  /** Something everyone should hear about (arrests, a spy exposed). Payload: string. */
+  Announce: "announce",
+  /** To a Detective: a teammate was just frozen here. Payload: { x, y, name }. */
+  FrozenPing: "frozenPing",
+  /** To a spy's real team (and the spy): payload { from, text }. */
+  Whisper: "whisper",
+} as const;
+
+export interface FrozenPingPayload {
+  x: number;
+  y: number;
+  name: string;
+}
+
+export interface WhisperPayload {
+  from: string;
+  text: string;
+}
+
+export const WHISPER_MAX_LENGTH = 80;
 
 export interface ActionPayload {
   kind: string;

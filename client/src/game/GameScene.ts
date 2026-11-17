@@ -17,9 +17,12 @@ import {
   CONFIG,
   MAP,
   bestAction,
+  bestRoleAction,
   passTarget,
   speedMultiplier,
   stepPlayer,
+  visibilityPolygon,
+  visionRadius,
   type MoveInput,
   type PlayerState,
   type RulePlayer,
@@ -32,6 +35,7 @@ import { drawMap } from "./draw";
 import { Hud } from "./hud";
 import { Potli } from "./Potli";
 import { COLORS, TEAM_COLORS } from "./colors";
+import { pings } from "./feed";
 
 type Predictor = ReturnType<typeof Predict.get>;
 
@@ -39,6 +43,8 @@ type Predictor = ReturnType<typeof Predict.get>;
  * Prediction is set up once per room connection and reused by every round,
  * so playing again doesn't stack up duplicate predictors.
  */
+const NO_POTLI = { x: 0, y: 0, carrierId: "", snatcherId: "" };
+
 const netByRoom = new WeakMap<GameRoom, { predict: Predictor; input: InputHandle<MoveInput> }>();
 
 function netFor(room: GameRoom) {
@@ -59,7 +65,8 @@ function netFor(room: GameRoom) {
         const s = room.state;
         const self = s.players.get(room.sessionId);
         if (!self || self.frozen) return;
-        stepPlayer(predicted, command as MoveInput, ctx.dt, speedMultiplier(self, s.players.values(), s.potli));
+        const potli = s.potli ?? NO_POTLI; // may be out of my view
+        stepPlayer(predicted, command as MoveInput, ctx.dt, speedMultiplier(self, s.players.values(), potli));
       },
     });
   }
@@ -77,6 +84,8 @@ export class GameScene extends Phaser.Scene {
   private blobs = new Map<string, Blob>();
   private potli!: Potli;
   private arrows!: Phaser.GameObjects.Graphics;
+  private fog!: Phaser.GameObjects.Graphics;
+  private prints!: Phaser.GameObjects.Graphics;
 
   constructor() {
     super("game");
@@ -88,6 +97,8 @@ export class GameScene extends Phaser.Scene {
 
   create() {
     drawMap(this);
+    this.prints = this.add.graphics().setDepth(5);
+    this.fog = this.add.graphics().setDepth(8);
     this.potli = new Potli(this);
     this.arrows = this.add.graphics().setDepth(30);
 
@@ -111,14 +122,9 @@ export class GameScene extends Phaser.Scene {
     this.applyZoom();
     this.scale.on(Phaser.Scale.Events.RESIZE, () => this.applyZoom());
 
+    // My blob starts the camera following as soon as it's created (syncBlobs).
+    if (this.overview) cam.centerOn(MAP.width / 2, MAP.height / 2);
     this.syncBlobs();
-    const myBlob = this.blobs.get(this.room.sessionId);
-    if (this.overview) {
-      cam.centerOn(MAP.width / 2, MAP.height / 2);
-    } else if (myBlob) {
-      cam.startFollow(myBlob, false, CONFIG.camera.followLerp, CONFIG.camera.followLerp);
-      cam.centerOn(myBlob.x, myBlob.y);
-    }
   }
 
   update(time: number) {
@@ -134,13 +140,29 @@ export class GameScene extends Phaser.Scene {
 
     this.syncBlobs();
     this.syncPotli(time);
+    this.drawFootprints();
+    this.drawFog();
     this.drawArrows();
     this.updateHud();
   }
 
-  /** Create blobs for new players; move and restyle every blob. */
+  /**
+   * Create blobs for players we can see, remove blobs the server stopped
+   * sending (they walked out of sight), and restyle the rest.
+   */
   private syncBlobs() {
     const s = this.room.state;
+    const me = s.players.get(this.room.sessionId);
+    const myRealTeam = me?.realTeam || me?.team;
+    const carrierId = s.potli?.carrierId ?? "";
+
+    for (const [id, blob] of this.blobs) {
+      if (!s.players.has(id)) {
+        blob.destroy();
+        this.blobs.delete(id);
+      }
+    }
+
     for (const [id, p] of s.players) {
       let blob = this.blobs.get(id);
       if (!blob) {
@@ -148,6 +170,7 @@ export class GameScene extends Phaser.Scene {
         blob = new Blob(this, p.team as Team, p.nickname, id === this.room.sessionId);
         blob.setLabelZoom(this.cameras.main.zoom);
         this.blobs.set(id, blob);
+        if (id === this.room.sessionId && !this.overview) this.followMe(blob);
       }
       const isMe = id === this.room.sessionId;
       blob.setPosition(this.predict.value(p, "x"), this.predict.value(p, "y"));
@@ -157,24 +180,85 @@ export class GameScene extends Phaser.Scene {
       );
       blob.setConnected(p.connected);
       blob.setLook({
-        frozen: p.frozen,
+        freeze: p.frozen ? p.freeze || "ice" : "",
         leader: p.role === "leader",
         protected: p.protected,
-        carrying: s.potli.carrierId === id,
+        carrying: carrierId === id,
         snatch:
-          s.potli.carrierId === id && s.potli.snatcherId
+          carrierId === id && s.potli.snatcherId
             ? Math.round((s.potli.snatchLeft / CONFIG.timers.snatchCountdownSec) * 20) / 20
             : 0,
         thawIn: p.frozen ? p.thawIn : 0,
+        // These secrets only arrive if I'm allowed to know them (server-side views).
+        detective: p.secretRole === "detective",
+        mole: !isMe && p.secretRole === "spy" && p.realTeam === myRealTeam ? p.realTeam : "",
+        exposed: p.exposed,
+        icedHand: !!p.icedHand,
+        rescueLeft: !p.rescueUsed,
       });
     }
   }
 
+  private followMe(blob: Blob) {
+    const cam = this.cameras.main;
+    cam.startFollow(blob, false, CONFIG.camera.followLerp, CONFIG.camera.followLerp);
+    cam.centerOn(blob.x, blob.y);
+  }
+
   private syncPotli(time: number) {
     const s = this.room.state;
+    // Not in my view (hidden behind a wall or out of range): don't draw it.
+    if (!s.potli) {
+      this.potli.setVisible(false);
+      return;
+    }
+    this.potli.setVisible(true);
     const carrierBlob = this.blobs.get(s.potli.carrierId);
     if (carrierBlob) this.potli.show(carrierBlob.x, carrierBlob.y, true, time);
-    else this.potli.show(s.potli.x, s.potli.y, false, time);
+    else if (!s.potli.carrierId) this.potli.show(s.potli.x, s.potli.y, false, time);
+    else this.potli.setVisible(false); // carried by someone I can't see
+  }
+
+  /** Footprints left by a secret freeze: only the ones I can see are ever sent. */
+  private drawFootprints() {
+    const g = this.prints.clear();
+    const prints = this.room.state.footprints;
+    if (!prints) return;
+    g.fillStyle(0xcfd3de, 0.55);
+    for (const f of prints.values()) {
+      // Two little ovals, side by side, along the walking direction.
+      const px = -Math.sin(f.angle) * 5;
+      const py = Math.cos(f.angle) * 5;
+      g.fillEllipse(f.x + px, f.y + py, 7, 10);
+      g.fillEllipse(f.x - px, f.y - py, 7, 10);
+    }
+  }
+
+  /**
+   * Fog of war: everything outside my vision circle, or behind walls, is
+   * dimmed (D25). We cast rays from my position (the same geometry the server
+   * uses) and darken the area beyond each ray's end.
+   */
+  private drawFog() {
+    const g = this.fog.clear();
+    const s = this.room.state;
+    const me = s.players.get(this.room.sessionId);
+    if (!me || s.phase !== "playing" || this.overview) return;
+
+    const origin = { x: this.predict.value(me, "x"), y: this.predict.value(me, "y") };
+    const poly = visibilityPolygon(origin, visionRadius(me), FOG_RAYS); // Detectives and spies see a bit further (D53)
+    const FAR = 5000;
+    g.fillStyle(COLORS.background, 0.72);
+    for (let i = 0; i < poly.length; i++) {
+      const a = poly[i];
+      const b = poly[(i + 1) % poly.length];
+      const angA = (i / poly.length) * Math.PI * 2;
+      const angB = (((i + 1) % poly.length) / poly.length) * Math.PI * 2;
+      const fa = { x: origin.x + Math.cos(angA) * FAR, y: origin.y + Math.sin(angA) * FAR };
+      const fb = { x: origin.x + Math.cos(angB) * FAR, y: origin.y + Math.sin(angB) * FAR };
+      g.fillTriangle(a.x, a.y, b.x, b.y, fb.x, fb.y);
+      g.fillTriangle(a.x, a.y, fb.x, fb.y, fa.x, fa.y);
+    }
   }
 
   /**
@@ -207,7 +291,8 @@ export class GameScene extends Phaser.Scene {
       g.strokeTriangle(tip.x, tip.y, left.x, left.y, right.x, right.y);
     };
 
-    if (me.role === "leader" && s.potli.carrierId !== me.id) {
+    if (me.role === "leader" && s.potli && s.potli.carrierId !== me.id) {
+      // The Leader is always sent the potli; if its carrier is out of sight, use the potli's position.
       const carrierBlob = this.blobs.get(s.potli.carrierId);
       arrow(carrierBlob?.x ?? s.potli.x, carrierBlob?.y ?? s.potli.y, COLORS.gold);
     }
@@ -216,6 +301,15 @@ export class GameScene extends Phaser.Scene {
         const b = this.blobs.get(id);
         if (b) arrow(b.x, b.y, TEAM_COLORS[me.team as Team].body);
       }
+    }
+    // Detective: where a teammate was just frozen (white arrow + ring, ~8 s).
+    const now = performance.now();
+    for (let i = pings.length - 1; i >= 0; i--) {
+      if (pings[i].until < now) pings.splice(i, 1);
+    }
+    for (const p of pings) {
+      arrow(p.x, p.y, 0xf1f2f6);
+      g.lineStyle(3, 0xf1f2f6, 0.5 + 0.4 * Math.sin(now / 150)).strokeCircle(p.x, p.y, 40);
     }
   }
 
@@ -226,9 +320,11 @@ export class GameScene extends Phaser.Scene {
     // Use my predicted position (what I see) with everyone else's server positions.
     const myView: RulePlayer = { ...plain(me), x: this.predict.value(me, "x"), y: this.predict.value(me, "y") };
     const others = [...s.players.values()].map((p) => (p.id === me.id ? myView : plain(p)));
+    const playing = s.phase === "playing" && !!s.potli;
     this.hud.update({
-      action: s.phase === "playing" ? bestAction(myView, others, s.potli) : null,
-      canPass: s.phase === "playing" && !!passTarget(myView, others, s.potli),
+      action: playing ? bestAction(myView, others, s.potli) : null,
+      roleAction: s.phase === "playing" ? bestRoleAction(myView, others) : null,
+      canPass: playing && !!passTarget(myView, others, s.potli),
     });
   }
 
@@ -244,6 +340,9 @@ export class GameScene extends Phaser.Scene {
   }
 }
 
+const FOG_RAYS = 240;
+
+/** What the rules need from a player (only the secrets this client was sent). */
 const plain = (p: PlayerState): RulePlayer => ({
   id: p.id,
   team: p.team,
@@ -252,6 +351,12 @@ const plain = (p: PlayerState): RulePlayer => ({
   y: p.y,
   frozen: p.frozen,
   protected: p.protected,
+  freeze: p.freeze,
+  secretRole: p.secretRole ?? "",
+  realTeam: p.realTeam ?? "",
+  icedHand: !!p.icedHand,
+  draggedBy: p.draggedBy,
+  rescueUsed: p.rescueUsed,
 });
 
 export function startGame(parent: HTMLElement, room: GameRoom): Phaser.Game {
