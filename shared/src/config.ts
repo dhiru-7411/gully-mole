@@ -46,7 +46,12 @@ export const CONFIG = {
     playerRadius: 22,
     /** Joystick inputs smaller than this fraction are ignored (thumb wobble). */
     deadzone: 0.15,
-    /** Multiplier while the Leader carries the object and no teammate is frozen. */
+    /**
+     * Anyone carrying the potli moves at this fraction of normal speed, so
+     * chasers can catch up and snatch (D38: without it, rounds ended in ~10 s).
+     */
+    carrierSpeedMultiplier: 0.85,
+    /** Extra multiplier while the Leader carries the object and no teammate is frozen. */
     leaderCarrySpeedBonus: 1.25,
     /** Speed multiplier while dragging a Shame-frozen Detective (DECISIONS D9). */
     dragSpeedMultiplier: 0.5,
@@ -64,20 +69,26 @@ export const CONFIG = {
     followLerp: 0.2,
   },
 
-  /** Max centre-to-centre distance for each interaction. (M2+) */
+  /**
+   * Max centre-to-centre distance for each interaction.
+   * Two blobs touch at 44 (2 × radius 22), so ~64 means "touching or nearly".
+   */
   distances: {
-    tag: 36,
-    handOff: 40,
-    snatch: 36,
-    arrest: 36,
-    lampUnfreeze: 40,
-    secretFreeze: 36,
-    drag: 40,
-    fireplaceUse: 60,
+    tag: 64,
+    /** Pass: "only to a teammate standing right beside you" (GDD). */
+    handOff: 70,
+    snatch: 64,
+    /** Blob centre to the potli's centre. */
+    grab: 48,
+    lampUnfreeze: 70,
+    arrest: 64,
+    secretFreeze: 64,
+    drag: 60,
+    fireplaceUse: 90,
   },
 
-  /** (M2+) */
   timers: {
+    /** Enemy must stay within snatch reach this long to take the potli. */
     snatchCountdownSec: 3,
     frozenHandSec: 20,
     footprintsSec: 20,

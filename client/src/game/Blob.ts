@@ -15,18 +15,49 @@ const S = R / 38; // sketch units -> world units
 const sx = (u: number) => (u - 50) * S;
 const sy = (v: number) => (v - 56) * S;
 
+/** Everything about a player that changes how their blob looks (docs/design states board). */
+export interface BlobLook {
+  frozen: boolean;
+  leader: boolean;
+  protected: boolean;
+  carrying: boolean;
+  /** 0..1 while an enemy is snatching from this blob, else 0. */
+  snatch: number;
+  /** Frozen Leader: seconds until the lamp thaws them (0 = hide). */
+  thawIn: number;
+}
+
 export class Blob extends Phaser.GameObjects.Container {
   private eyes: Phaser.GameObjects.Graphics;
+  /** Under the body: carrying ring, protection ring, snatch ring. */
+  private under: Phaser.GameObjects.Graphics;
+  /** Over the body: ice and badges. */
+  private over: Phaser.GameObjects.Graphics;
+  private thawText: Phaser.GameObjects.Text;
   private label: Phaser.GameObjects.Text;
   private lastFx = NaN;
   private lastFy = NaN;
+  private lastLook = "";
 
   constructor(scene: Phaser.Scene, team: Team, nickname: string, isMe: boolean) {
     super(scene, 0, 0);
 
+    this.under = scene.add.graphics();
     const body = scene.add.graphics();
     drawBody(body, team);
     this.eyes = scene.add.graphics();
+    this.over = scene.add.graphics();
+    this.thawText = scene.add
+      .text(0, -R - 10, "", {
+        fontFamily: "system-ui, sans-serif",
+        fontSize: "18px",
+        fontStyle: "bold",
+        color: "#ffd43b",
+        stroke: "#11131a",
+        strokeThickness: 4,
+      })
+      .setOrigin(0.5, 1)
+      .setResolution(Math.min(window.devicePixelRatio || 1, 3));
 
     this.label = scene.add
       .text(0, R + 6, nickname, {
@@ -40,7 +71,7 @@ export class Blob extends Phaser.GameObjects.Container {
       .setOrigin(0.5, 0)
       .setResolution(Math.min(window.devicePixelRatio || 1, 3));
 
-    this.add([body, this.eyes, this.label]);
+    this.add([this.under, body, this.eyes, this.over, this.thawText, this.label]);
     scene.add.existing(this);
     this.setDepth(isMe ? 11 : 10);
   }
@@ -48,6 +79,50 @@ export class Blob extends Phaser.GameObjects.Container {
   /** Keep the name the same size on screen at any zoom. */
   setLabelZoom(zoom: number) {
     this.label.setScale(1 / zoom);
+    this.thawText.setScale(1 / zoom);
+  }
+
+  /** Redraw rings, ice and badges, only when something changed. */
+  setLook(look: BlobLook) {
+    const key = JSON.stringify(look);
+    if (key === this.lastLook) return;
+    this.lastLook = key;
+
+    const u = this.under.clear();
+    if (look.carrying) u.lineStyle(4, COLORS.gold).strokeCircle(0, 0, R + 6);
+    if (look.protected) {
+      // Dashed white ring: just-thawed Leader can't be frozen.
+      u.lineStyle(3, 0xf1f2f6, 0.9);
+      for (let a = 0; a < Math.PI * 2; a += Math.PI / 8) {
+        u.beginPath();
+        u.arc(0, 0, R + 11, a, a + Math.PI / 14);
+        u.strokePath();
+      }
+    }
+    if (look.snatch > 0) {
+      // Shrinking orange arc: the snatch countdown everyone can see.
+      u.lineStyle(5, COLORS.fire);
+      u.beginPath();
+      u.arc(0, 0, R + 14, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * look.snatch);
+      u.strokePath();
+    }
+
+    const o = this.over.clear();
+    if (look.frozen) {
+      // Light blue ice block (docs/design: "Frozen").
+      o.fillStyle(0x9be7ff, 0.55).fillRoundedRect(-R - 4, -R - 4, 2 * R + 8, 2 * R + 8, 14);
+      o.lineStyle(3, 0xd5f6ff).strokeRoundedRect(-R - 4, -R - 4, 2 * R + 8, 2 * R + 8, 14);
+    }
+    if (look.leader) {
+      // Fire-lamp badge, top right.
+      const bx = R * 0.85;
+      const by = -R * 0.85;
+      o.fillStyle(COLORS.fire).fillCircle(bx, by, 9);
+      o.lineStyle(2, COLORS.outline).strokeCircle(bx, by, 9);
+      o.fillStyle(COLORS.gold).fillTriangle(bx, by - 6, bx - 4, by + 3, bx + 4, by + 3);
+      o.fillCircle(bx, by + 2, 3.5);
+    }
+    this.thawText.setText(look.thawIn > 0 ? `${look.thawIn}` : "");
   }
 
   /** fx, fy: facing direction, -127..127 each. */

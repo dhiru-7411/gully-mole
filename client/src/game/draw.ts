@@ -32,6 +32,16 @@ export function drawMap(scene: Phaser.Scene) {
       })
       .setOrigin(0.5, 1) // sits just above the den, so spawning blobs don't cover it
       .setAlpha(0.85);
+    // D39: the OTHER team scores here (like a football goal you defend).
+    const attacker = team === "blue" ? "green" : "blue";
+    scene.add
+      .text(d.x + d.w / 2, d.y + d.h + 10, `${CONFIG.teams.names[attacker]} scores here`, {
+        fontFamily: "system-ui, sans-serif",
+        fontSize: "18px",
+        color: TEAM_COLORS[attacker].css,
+      })
+      .setOrigin(0.5, 0)
+      .setAlpha(0.9);
   }
 
   // Middle zone (dashed circle) and the potli's start spot.
@@ -82,15 +92,3 @@ export function drawMap(scene: Phaser.Scene) {
   g.lineStyle(4, COLORS.building).strokeRect(0, 0, MAP.width, MAP.height);
 }
 
-/**
- * The potli, drawn as a static marker for now. M2 turns it into the real
- * object you can pick up, pass and snatch.
- */
-export function drawPotli(scene: Phaser.Scene, x: number, y: number) {
-  const g = scene.add.graphics({ x, y });
-  g.fillStyle(COLORS.gold).lineStyle(3, COLORS.outline);
-  g.fillCircle(0, 6, 18).strokeCircle(0, 6, 18);
-  g.fillStyle(COLORS.goldDark).fillRoundedRect(-10, -14, 20, 8, 4);
-  g.fillStyle(COLORS.gold).fillTriangle(-9, -14, -16, -24, 0, -18).fillTriangle(9, -14, 16, -24, 0, -18);
-  return g;
-}

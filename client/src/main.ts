@@ -34,7 +34,7 @@ const ui = {
 };
 
 let room: GameRoom | null = null;
-let gameStarted = false;
+let game: import("phaser").Game | null = null;
 
 // ------------------------------------------------------------------ home
 
@@ -98,7 +98,7 @@ function attach(r: GameRoom) {
   r.onLeave(() => {
     room = null;
     forget();
-    if (gameStarted) location.href = location.pathname; // simplest clean reset
+    if (game) location.href = location.pathname; // simplest clean reset
     else show("home");
   });
   render();
@@ -108,14 +108,20 @@ function render() {
   if (!room) return;
   const s = room.state;
 
-  if (s.phase === Phase.Playing) {
-    if (!gameStarted) {
-      gameStarted = true;
+  // A round is on (or just ended and showing the result): the game screen.
+  if (s.phase === Phase.Playing || s.phase === Phase.Ended) {
+    if (!game) {
       show("game");
       showHud();
-      startGame(ui.game, room);
+      game = startGame(ui.game, room);
     }
     return;
+  }
+
+  // Back in the lobby after a round: close the game, show the lobby.
+  if (game) {
+    game.destroy(true);
+    game = null;
   }
 
   show("lobby");
@@ -174,18 +180,14 @@ ui.roomCode.addEventListener("click", async () => {
   }
 });
 
-/** "You're on Blue" badge + a controls hint that fades after a few seconds. */
+/** A controls hint that fades after a few seconds (the team badge is kept up to date by the HUD). */
 function showHud() {
-  const me = room?.state.players.get(room.sessionId);
-  const team = me?.team as Team | undefined;
-  const badge = $("hud-team");
-  if (team) {
-    badge.innerHTML = `<span class="dot" style="background:${team === "blue" ? "#4a83ff" : "#3fd17a"}"></span>`;
-    badge.append(`You're on ${CONFIG.teams.names[team]}`);
-  }
   const hint = $("hud-hint");
   const touch = matchMedia("(pointer: coarse)").matches;
-  hint.textContent = touch ? "Drag on the left side to move" : "WASD or arrow keys to move";
+  hint.textContent = touch
+    ? "Drag on the left to move · big button to act"
+    : "WASD / arrows to move · Space: action · E: pass";
+  hint.classList.remove("faded");
   setTimeout(() => hint.classList.add("faded"), 8000);
 }
 

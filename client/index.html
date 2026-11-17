@@ -11,7 +11,7 @@
     <!-- Home: pick a nickname, then create or join -->
     <section id="screen-home" class="screen">
       <h1 class="logo">Gully <span>Mole</span></h1>
-      <p class="tagline">Police vs Chor. One object. A spy on every team.</p>
+      <p class="tagline">Blue vs Green. One potli. A spy on every team.</p>
 
       <label class="field">
         <span>Nickname</span>
@@ -55,6 +55,24 @@
         <span id="hud-team" class="team-badge"></span>
         <span id="hud-hint" class="hud-hint"></span>
       </div>
+      <div id="hud-timer" class="hud-timer">0:00</div>
+      <div id="hud-alert" class="hud-alert hidden"></div>
+
+      <!-- D32: one smart button + Pass (only when you can pass) -->
+      <div class="actions">
+        <button id="btn-pass" class="btn-pass hidden" type="button">Pass</button>
+        <button id="btn-action" class="btn-action hidden" type="button" disabled>·</button>
+      </div>
+
+      <div id="end-overlay" class="end-overlay hidden">
+        <div class="end-card">
+          <h2 id="end-title">Blue wins!</h2>
+          <p id="end-reason"></p>
+          <button id="btn-back" class="btn primary" type="button">Back to lobby</button>
+          <p id="end-wait" class="hint">Waiting for the host…</p>
+        </div>
+      </div>
+
       <div class="rotate-hint">Turn your phone sideways for a better view</div>
     </div>
 

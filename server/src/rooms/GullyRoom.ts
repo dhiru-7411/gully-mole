@@ -3,8 +3,10 @@
  * so joining is just `client.joinById(code)`.
  *
  * M0: lobby (join, nicknames, host, dev bots, start).
- * M1: teams, spawns, and server-authoritative movement at a fixed tick rate.
- * All decisions happen here on the server; clients only send inputs.
+ * M1: teams, spawns, server-authoritative movement at a fixed tick rate.
+ * M2: the round itself (see game/round.ts): potli, tagging, the Leader's lamp,
+ *     timer, winning, and back to the lobby.
+ * All decisions happen here on the server; clients only send inputs and requests.
  */
 import { Room, ServerError, type Client, type StepContext } from "colyseus";
 import {
@@ -15,22 +17,24 @@ import {
   MoveInput,
   Phase,
   PlayerState,
+  Role,
   ServerMsg,
-  assignTeams,
   canStart,
   cleanNickname,
   generateRoomCode,
   pickNextHost,
-  spawnPoint,
   stepPlayer,
+  type ActionKind,
+  type ActionPayload,
   type AddBotsPayload,
   type JoinOptions,
-  type Team,
 } from "@gully/shared";
 import { BotBrain } from "../bots";
+import { Round } from "../game/round";
 
 /** Codes in use on this server process (one process on Render's free tier). */
 const codesInUse = new Set<string>();
+const ACTION_KINDS: readonly ActionKind[] = ["unfreeze", "tag", "snatch", "grab"];
 
 export class GullyRoom extends Room<{ state: GameState; input: MoveInput }> {
   // Humans only: bots have no connection, so we cap the total ourselves.
@@ -46,13 +50,19 @@ export class GullyRoom extends Room<{ state: GameState; input: MoveInput }> {
     sanitize: { moveX: [-127, 127], moveY: [-127, 127] },
   });
 
+  private round = new Round(this.state);
   private botCounter = 0;
   private brains = new Map<string, BotBrain>();
+  /** Humans who left for good during a round: removed when everyone returns to the lobby. */
+  private goneForGood = new Set<string>();
 
   messages = {
     [ClientMsg.Start]: (client: Client) => this.handleStart(client),
     [ClientMsg.AddBots]: (client: Client, payload?: AddBotsPayload) => this.handleAddBots(client, payload),
     [ClientMsg.RemoveBot]: (client: Client, botId?: unknown) => this.handleRemoveBot(client, botId),
+    [ClientMsg.Action]: (client: Client, payload?: ActionPayload) => this.handleAction(client, payload),
+    [ClientMsg.Pass]: (client: Client) => this.round.pass(client.sessionId),
+    [ClientMsg.BackToLobby]: (client: Client) => this.handleBackToLobby(client),
   };
 
   onCreate() {
@@ -68,24 +78,35 @@ export class GullyRoom extends Room<{ state: GameState; input: MoveInput }> {
   }
 
   /**
-   * One simulation step. Humans move once per input they sent (the same step
-   * their own browser predicted). Bots ask their brain for an input each tick.
+   * One simulation step:
+   * 1. Humans move once per input they sent (the same step their browser predicted).
+   * 2. Bots ask their brain what to do.
+   * 3. The round advances (timers, snatch countdown, win checks).
+   * Frozen players don't move.
    */
   private step(ctx: StepContext) {
     const playing = this.state.phase === Phase.Playing;
 
     for (const [id, player] of this.state.players) {
       if (player.isBot) {
-        if (playing) stepPlayer(player, this.brains.get(id)!.next(player), ctx.dt);
+        if (!playing) continue;
+        const d = this.brains.get(id)!.next(player, this.state, CONFIG.movement.tickRate);
+        if (!player.frozen) stepPlayer(player, d.move, ctx.dt, this.round.speedFor(player));
+        if (d.action) this.round.act(id, d.action);
+        if (d.pass) this.round.pass(id);
         continue;
       }
       const channel = this.inputs.get(id);
       if (!channel) continue;
-      // Iterating drains the queue. In the lobby we just throw inputs away.
+      // Iterating drains the queue. Outside a round we just throw inputs away.
       for (const input of channel) {
-        if (playing && player.connected) stepPlayer(player, input, ctx.dt);
+        if (playing && player.connected && !player.frozen) {
+          stepPlayer(player, input, ctx.dt, this.round.speedFor(player));
+        }
       }
     }
+
+    this.round.tick(ctx.dt);
   }
 
   /** Runs before onJoin. Throwing here rejects the join with a message the client can show. */
@@ -140,7 +161,9 @@ export class GullyRoom extends Room<{ state: GameState; input: MoveInput }> {
       this.state.players.delete(client.sessionId);
     } else {
       // GDD: a disconnected player's character stays on the map and can't move.
+      // They can still be frozen, and the potli can be snatched from them.
       player.connected = false;
+      this.goneForGood.add(client.sessionId);
     }
     this.passHostIfNeeded(client.sessionId);
     console.log(`[room ${this.roomId}] ${player.nickname} left`);
@@ -160,10 +183,38 @@ export class GullyRoom extends Room<{ state: GameState; input: MoveInput }> {
     const check = canStart(this.state.players.size);
     if (!check.ok) return this.notice(client, check.reason);
 
-    this.setUpRound();
+    this.round.start();
     this.state.phase = Phase.Playing;
     this.lock(); // no new joins mid-round
     console.log(`[room ${this.roomId}] round started with ${this.state.players.size} players`);
+  }
+
+  private handleAction(client: Client, payload?: ActionPayload) {
+    // Validate the shape; Round re-checks the rules.
+    if (!payload || !ACTION_KINDS.includes(payload.kind as ActionKind)) return;
+    const targetId = typeof payload.targetId === "string" ? payload.targetId : "";
+    this.round.act(client.sessionId, { kind: payload.kind as ActionKind, targetId });
+  }
+
+  /** Host only: after a round, everyone back to the lobby to play again. */
+  private handleBackToLobby(client: Client) {
+    if (!this.isHost(client) || this.state.phase !== Phase.Ended) return;
+    for (const id of this.goneForGood) this.state.players.delete(id);
+    this.goneForGood.clear();
+    for (const p of this.state.players.values()) {
+      p.team = "";
+      p.role = Role.Normal;
+      p.frozen = false;
+      p.thawIn = 0;
+      p.protected = false;
+    }
+    this.state.potli.carrierId = "";
+    this.state.potli.snatcherId = "";
+    this.state.winner = "";
+    this.state.endReason = "";
+    this.state.timeLeft = 0;
+    this.state.phase = Phase.Lobby;
+    this.unlock(); // friends can join again
   }
 
   private handleAddBots(client: Client, payload?: AddBotsPayload) {
@@ -193,22 +244,6 @@ export class GullyRoom extends Room<{ state: GameState; input: MoveInput }> {
   }
 
   // ----------------------------------------------------------------- helpers
-
-  /** Random teams (DECISIONS D4), everyone placed on a spawn spot in their own den. */
-  private setUpRound() {
-    const teams = assignTeams([...this.state.players.keys()]);
-    const nextSpot: Record<Team, number> = { blue: 0, green: 0 };
-    for (const [id, player] of this.state.players) {
-      const team = teams.get(id)!;
-      const spot = spawnPoint(team, nextSpot[team]++);
-      player.team = team;
-      player.x = spot.x;
-      player.y = spot.y;
-      // Face the middle of the map.
-      player.fx = team === "blue" ? 127 : -127;
-      player.fy = 0;
-    }
-  }
 
   private addBot() {
     const id = `bot-${++this.botCounter}`;
