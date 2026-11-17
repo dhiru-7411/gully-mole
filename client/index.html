@@ -42,6 +42,10 @@
           <button id="btn-add-bot" class="btn small">+1 bot</button>
           <button id="btn-fill-bots" class="btn small">Fill with bots</button>
         </div>
+        <label id="easy-bots-row" class="check hidden">
+          <input id="easy-bots" type="checkbox" checked />
+          <span>Easy bots (they never grab the potli, so you can test roles)</span>
+        </label>
         <button id="btn-start" class="btn primary">Start game</button>
       </div>
       <p id="waiting-host" class="hint hidden">Waiting for the host to start…</p>
@@ -57,17 +61,30 @@
       </div>
       <div id="hud-timer" class="hud-timer">0:00</div>
       <div id="hud-alert" class="hud-alert hidden"></div>
+      <div id="hud-feed" class="hud-feed"></div>
 
-      <!-- D32: one smart button + Pass (only when you can pass) -->
+      <!-- Your secret role, shown privately at the start of a round -->
+      <div id="role-card" class="role-card hidden">
+        <h2 id="role-title"></h2>
+        <p id="role-body"></p>
+      </div>
+
+      <!-- D32: smart button + Pass; D42: role button (Arrest / Ice / Free / Drag) -->
       <div class="actions">
+        <button id="btn-whisper" class="btn-small hidden" type="button">Whisper</button>
         <button id="btn-pass" class="btn-pass hidden" type="button">Pass</button>
+        <button id="btn-role" class="btn-role hidden" type="button"></button>
         <button id="btn-action" class="btn-action hidden" type="button" disabled>·</button>
+      </div>
+      <div id="whisper-box" class="whisper-box hidden">
+        <input id="whisper-input" placeholder="Whisper to your real team… (Enter)" autocomplete="off" />
       </div>
 
       <div id="end-overlay" class="end-overlay hidden">
         <div class="end-card">
           <h2 id="end-title">Blue wins!</h2>
           <p id="end-reason"></p>
+          <p id="end-reveal" class="end-reveal"></p>
           <button id="btn-back" class="btn primary" type="button">Back to lobby</button>
           <p id="end-wait" class="hint">Waiting for the host…</p>
         </div>

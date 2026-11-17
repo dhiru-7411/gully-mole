@@ -57,9 +57,19 @@ export const CONFIG = {
     dragSpeedMultiplier: 0.5,
   },
 
-  /** (M3+) Each player sees a circle of this radius, blocked by obstacles. */
+  /** Each player sees a circle of this radius, blocked by obstacles. */
   vision: {
     radius: 300,
+    /** The spy's iced hand is only visible this close (GDD: "visible only to players close by"). */
+    nearRadius: 160,
+  },
+
+  /** Footprints after a secret freeze (GDD: ~20 s). */
+  footprints: {
+    /** How long after the freeze the spy keeps leaving prints. */
+    trailSec: 4,
+    /** One print every this many seconds while trailing. */
+    everySec: 0.35,
   },
 
   /** Every screen shows this many world units of height (DECISIONS D23). */

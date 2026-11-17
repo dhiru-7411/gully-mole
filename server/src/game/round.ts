@@ -1,38 +1,68 @@
 /**
- * One round of capture-the-potli (M2). Every rule that plays out over time
- * lives here: actions, the snatch countdown, the Leader's auto-thaw and
- * protection, the potli following its carrier, the timer, and the three ways a
- * round ends (GDD "Round timer and win conditions").
+ * One round. Every rule that plays out over time lives here.
  *
- * It only touches the GameState, so tests can drive it directly without any
- * networking.
+ * M2: actions, the snatch countdown, the Leader's auto-thaw and protection,
+ *     the potli following its carrier, the timer, and the ways a round ends.
+ * M3: secret roles (Detective, spies), the spy's secret freeze (iced hand,
+ *     footprints, fireplace melt), secret unfreeze, silent pass (and getting
+ *     exposed), arrests (Out / shame freeze), dragging a shamed Detective to a
+ *     fireplace, spies never scoring, and wipe-out counted by REAL team.
+ *
+ * It only touches the GameState and pushes `events` (pings, announcements)
+ * for the room to deliver, so tests can drive it directly.
  */
 import {
   CONFIG,
+  Footprint,
+  Freeze,
   MAP,
   Phase,
   Role,
+  SecretRole,
   TEAMS,
+  assignRoles,
   assignTeams,
+  canSee,
+  dist,
   inGoal,
   isActionAllowed,
+  isRoleActionAllowed,
+  nearFireplace,
   passTarget,
+  resolveCollisions,
   roundDurationSeconds,
-  shuffled,
   spawnPoint,
   speedMultiplier,
-  dist,
   type Action,
   type GameState,
   type PlayerState,
+  type RoleAction,
   type Team,
 } from "@gully/shared";
 
+export type RoundEvent =
+  | { type: "announce"; text: string }
+  | { type: "frozenPing"; to: string; x: number; y: number; name: string };
+
+const names = CONFIG.teams.names as Record<string, string>;
+
 export class Round {
+  /** Things the room should tell players (drained every tick). */
+  events: RoundEvent[] = [];
+
   /** Seconds until each frozen Leader thaws (fractional, server-only). */
   private thawTimers = new Map<string, number>();
   /** Seconds of post-thaw protection left. */
   private protectTimers = new Map<string, number>();
+  /** Spy id -> seconds until their iced hand thaws by itself. */
+  private handTimers = new Map<string, number>();
+  /** Spy id -> footprint trail state after a secret freeze. */
+  private trails = new Map<string, { left: number; next: number }>();
+  /** Footprint id -> seconds until it fades. */
+  private printTimers = new Map<string, number>();
+  private printCounter = 0;
+  /** Detective id -> wrong arrests this round. */
+  private wrongArrests = new Map<string, number>();
   private secondAcc = 0;
 
   constructor(
@@ -42,7 +72,7 @@ export class Round {
 
   // ------------------------------------------------------------- setup
 
-  /** Teams, a Leader per team, spawns, potli in the middle, timer. */
+  /** Teams, roles, spawns, potli in the middle, timer. */
   start() {
     const s = this.state;
     const teams = assignTeams([...s.players.keys()], this.random);
@@ -51,35 +81,51 @@ export class Round {
     for (const [id, p] of s.players) {
       const team = teams.get(id)!;
       const spot = spawnPoint(team, nextSpot[team]++);
-      p.team = team;
-      p.role = Role.Normal;
-      p.x = spot.x;
-      p.y = spot.y;
-      p.fx = team === "blue" ? 127 : -127;
-      p.fy = 0;
-      p.frozen = false;
-      p.thawIn = 0;
-      p.protected = false;
+      Object.assign(p, {
+        team,
+        role: Role.Normal,
+        secretRole: SecretRole.None,
+        realTeam: team,
+        x: spot.x,
+        y: spot.y,
+        fx: team === "blue" ? 127 : -127,
+        fy: 0,
+        frozen: false,
+        freeze: Freeze.None,
+        thawIn: 0,
+        protected: false,
+        exposed: false,
+        draggedBy: "",
+        rescueUsed: false,
+        icedHand: false,
+      });
     }
 
-    // One random Leader per team (DECISIONS D35).
+    // Roles inside each team: Leader, Detective, spy (planted by the other team), Normals.
     for (const team of TEAMS) {
-      const members = [...s.players.values()].filter((p) => p.team === team);
-      const leader = shuffled(members, this.random)[0];
-      if (leader) leader.role = Role.Leader;
+      const members = [...s.players.values()].filter((p) => p.team === team).map((p) => p.id);
+      for (const [id, a] of assignRoles(team, members, this.random)) {
+        const p = s.players.get(id)!;
+        p.role = a.role;
+        p.secretRole = a.secretRole;
+        p.realTeam = a.realTeam;
+      }
     }
 
     s.potli.x = MAP.middleZone.x;
     s.potli.y = MAP.middleZone.y;
     s.potli.carrierId = "";
     this.cancelSnatch();
+    s.footprints.clear();
 
     s.timeLeft = roundDurationSeconds(s.players.size);
     s.winner = "";
     s.endReason = "";
-    this.thawTimers.clear();
-    this.protectTimers.clear();
+    for (const m of [this.thawTimers, this.protectTimers, this.handTimers, this.trails, this.printTimers, this.wrongArrests]) {
+      m.clear();
+    }
     this.secondAcc = 0;
+    this.events = [];
   }
 
   // ----------------------------------------------------------- actions
@@ -94,7 +140,7 @@ export class Round {
     const target = s.players.get(action.targetId);
     switch (action.kind) {
       case "tag":
-        this.freeze(target!);
+        this.freeze(target!, Freeze.Ice);
         break;
       case "unfreeze":
         this.unfreeze(target!);
@@ -110,7 +156,39 @@ export class Round {
     return true;
   }
 
-  /** The Pass button: hand the potli to the nearest free teammate beside you. */
+  /** The role button (D42): arrest / ice / free / drag / release. */
+  roleAct(playerId: string, action: RoleAction): boolean {
+    const s = this.state;
+    const me = s.players.get(playerId);
+    if (!me || s.phase !== Phase.Playing) return false;
+    if (!isRoleActionAllowed(me, action, s.players)) return false;
+    const target = s.players.get(action.targetId)!;
+
+    switch (action.kind) {
+      case "arrest":
+        this.arrest(me, target);
+        break;
+      case "ice":
+        // Looks exactly like a normal tag (GDD), but costs the spy an iced hand + footprints.
+        this.freeze(target, Freeze.Ice);
+        me.icedHand = true;
+        this.handTimers.set(me.id, CONFIG.timers.frozenHandSec);
+        this.trails.set(me.id, { left: CONFIG.footprints.trailSec, next: 0 });
+        break;
+      case "free":
+        this.unfreeze(target);
+        break;
+      case "drag":
+        target.draggedBy = me.id;
+        break;
+      case "release":
+        target.draggedBy = "";
+        break;
+    }
+    return true;
+  }
+
+  /** The Pass button. A spy passing to their real team is the silent pass. */
   pass(playerId: string): boolean {
     const s = this.state;
     const me = s.players.get(playerId);
@@ -119,10 +197,26 @@ export class Round {
     if (!mate) return false;
     s.potli.carrierId = mate.id;
     this.cancelSnatch(); // a hand-off beats the countdown
+
+    if (mate.team !== me.team) {
+      // Silent pass (spy -> real team). If a fake teammate sees it, the spy is exposed.
+      const witness = [...s.players.values()].find(
+        (w) =>
+          w.team === me.team &&
+          w.realTeam === me.team && // a genuine member of the team the spy sits in
+          w.id !== me.id &&
+          !w.frozen &&
+          canSee(w, me),
+      );
+      if (witness && !me.exposed) {
+        me.exposed = true;
+        this.announce(`${witness.nickname} saw ${me.nickname} pass the potli to ${names[mate.team]}. ${me.nickname} is a SPY!`);
+      }
+    }
     return true;
   }
 
-  /** How fast this player moves right now (Leader carry bonus). */
+  /** How fast this player moves right now (carry, Leader bonus, dragging). */
   speedFor(p: PlayerState): number {
     return speedMultiplier(p, this.state.players.values(), this.state.potli);
   }
@@ -140,10 +234,29 @@ export class Round {
       s.timeLeft--;
     }
 
-    // Frozen Leaders thaw on their own after ~10 s, then get brief protection.
+    this.tickLeaders(dt);
+    this.tickSpies(dt);
+    this.tickDrags();
+
+    // The potli moves with its carrier.
+    const carrier = s.players.get(s.potli.carrierId);
+    if (carrier) {
+      s.potli.x = carrier.x;
+      s.potli.y = carrier.y;
+    } else if (s.potli.carrierId) {
+      s.potli.carrierId = "";
+    }
+
+    this.tickSnatch(dt);
+    this.checkEnd();
+  }
+
+  /** Frozen Leaders thaw on their own after ~10 s, then get brief protection. */
+  private tickLeaders(dt: number) {
+    const s = this.state;
     for (const [id, left] of this.thawTimers) {
       const p = s.players.get(id);
-      if (!p || !p.frozen) {
+      if (!p || p.freeze !== Freeze.Ice) {
         this.thawTimers.delete(id);
         continue;
       }
@@ -167,18 +280,75 @@ export class Round {
         this.protectTimers.set(id, now);
       }
     }
+  }
 
-    // The potli moves with its carrier.
-    const carrier = s.players.get(s.potli.carrierId);
-    if (carrier) {
-      s.potli.x = carrier.x;
-      s.potli.y = carrier.y;
-    } else if (s.potli.carrierId) {
-      s.potli.carrierId = ""; // carrier vanished (shouldn't happen mid-round)
+  /** Iced hands thaw (or melt at a fireplace); footprints are laid and fade. */
+  private tickSpies(dt: number) {
+    const s = this.state;
+    for (const [id, left] of this.handTimers) {
+      const p = s.players.get(id);
+      const now = left - dt;
+      if (!p || now <= 0 || nearFireplace(p)) {
+        if (p) p.icedHand = false;
+        this.handTimers.delete(id);
+      } else {
+        this.handTimers.set(id, now);
+      }
     }
 
-    this.tickSnatch(dt);
-    this.checkEnd();
+    for (const [id, trail] of this.trails) {
+      const p = s.players.get(id);
+      trail.left -= dt;
+      trail.next -= dt;
+      if (!p || trail.left <= 0) {
+        this.trails.delete(id);
+        continue;
+      }
+      if (trail.next <= 0) {
+        trail.next = CONFIG.footprints.everySec;
+        const fid = `f${++this.printCounter}`;
+        s.footprints.set(fid, new Footprint({ x: p.x, y: p.y, angle: Math.atan2(p.fy, p.fx) }));
+        this.printTimers.set(fid, CONFIG.timers.footprintsSec);
+      }
+    }
+
+    for (const [fid, left] of this.printTimers) {
+      const now = left - dt;
+      if (now <= 0) {
+        s.footprints.delete(fid);
+        this.printTimers.delete(fid);
+      } else {
+        this.printTimers.set(fid, now);
+      }
+    }
+  }
+
+  /** A dragged Detective trails behind their rescuer; reaching a fireplace frees them (once). */
+  private tickDrags() {
+    const s = this.state;
+    for (const p of s.players.values()) {
+      if (!p.draggedBy) continue;
+      const dragger = s.players.get(p.draggedBy);
+      if (!dragger || dragger.frozen || p.freeze !== Freeze.Shame) {
+        p.draggedBy = "";
+        continue;
+      }
+      // Hang on just behind the dragger.
+      const len = Math.sqrt(dragger.fx * dragger.fx + dragger.fy * dragger.fy) || 1;
+      const back = CONFIG.movement.playerRadius * 2 + 4;
+      const target = { x: dragger.x - (dragger.fx / len) * back, y: dragger.y - (dragger.fy / len) * back };
+      if (dist(p, target) > 2) {
+        p.x = target.x;
+        p.y = target.y;
+        resolveCollisions(p, CONFIG.movement.playerRadius);
+      }
+      if (nearFireplace(p) || nearFireplace(dragger)) {
+        this.unfreeze(p);
+        p.rescueUsed = true;
+        p.draggedBy = "";
+        this.announce(`${p.nickname} was dragged to the fire and is back in the game (no more rescues).`);
+      }
+    }
   }
 
   private tickSnatch(dt: number) {
@@ -198,16 +368,19 @@ export class Round {
     }
   }
 
-  /** GDD order: score, then wipe-out, then time. */
+  /** Score, then wipe-out, then time. */
   private checkEnd() {
     const s = this.state;
     const carrier = s.players.get(s.potli.carrierId);
-    // D39: you score by carrying the potli into the ENEMY's den.
-    if (carrier && inGoal(carrier.team as Team, carrier)) return this.end(carrier.team, "home");
+    // D39: you score by carrying the potli into the ENEMY's den. D2: a spy never scores.
+    if (carrier && carrier.secretRole !== SecretRole.Spy && inGoal(carrier.team as Team, carrier)) {
+      return this.end(carrier.team, "home");
+    }
 
+    // Wipe-out (GDD): every player who REALLY plays for a team (incl. their planted
+    // spies) is frozen or Out at the same time.
     for (const team of TEAMS) {
-      const members = [...s.players.values()].filter((p) => p.team === team);
-      // (M3 adds: plus the spy they planted in your team.)
+      const members = [...s.players.values()].filter((p) => p.realTeam === team);
       if (members.length > 0 && members.every((p) => p.frozen)) {
         return this.end(team === "blue" ? "green" : "blue", "wipeout");
       }
@@ -227,9 +400,34 @@ export class Round {
 
   // ------------------------------------------------------------ helpers
 
-  private freeze(p: PlayerState) {
+  private arrest(det: PlayerState, suspect: PlayerState) {
+    if (suspect.secretRole === SecretRole.Spy) {
+      suspect.exposed = true;
+      this.freeze(suspect, Freeze.Out);
+      this.announce(
+        `${det.nickname} arrested ${suspect.nickname}: a SPY for ${names[suspect.realTeam]}! ${suspect.nickname} is Out.`,
+      );
+      return;
+    }
+    const wrong = (this.wrongArrests.get(det.id) ?? 0) + 1;
+    this.wrongArrests.set(det.id, wrong);
+    if (wrong >= 2) {
+      this.freeze(det, Freeze.Out);
+      this.announce(`${det.nickname} arrested ${suspect.nickname}, who is innocent. Second mistake: ${det.nickname} is Out!`);
+    } else {
+      this.freeze(det, Freeze.Shame);
+      this.announce(
+        `${det.nickname} arrested ${suspect.nickname}, who is innocent! ${det.nickname} is shame-frozen. Drag them to a fire.`,
+      );
+    }
+  }
+
+  private freeze(p: PlayerState, kind: string) {
     const s = this.state;
+    const wasFrozen = p.frozen;
     p.frozen = true;
+    p.freeze = kind;
+    p.protected = false;
     // GDD: a frozen carrier drops the potli where they stand.
     if (s.potli.carrierId === p.id) {
       s.potli.carrierId = "";
@@ -238,20 +436,42 @@ export class Round {
       this.cancelSnatch();
     }
     if (s.potli.snatcherId === p.id) this.cancelSnatch();
-    if (p.role === Role.Leader) {
+    // Anyone this player was dragging is let go.
+    for (const o of s.players.values()) if (o.draggedBy === p.id) o.draggedBy = "";
+    if (kind !== Freeze.Shame) p.draggedBy = "";
+
+    if (p.role === Role.Leader && kind === Freeze.Ice) {
       this.thawTimers.set(p.id, CONFIG.timers.leaderAutoThawSec);
       p.thawIn = CONFIG.timers.leaderAutoThawSec;
+    } else {
+      this.thawTimers.delete(p.id);
+      p.thawIn = 0;
+    }
+
+    // GDD: the Detective is notified whenever a teammate is frozen, to get there first.
+    if (!wasFrozen) {
+      for (const d of s.players.values()) {
+        if (d.secretRole === SecretRole.Detective && d.team === p.team && d.id !== p.id && !d.frozen) {
+          this.events.push({ type: "frozenPing", to: d.id, x: p.x, y: p.y, name: p.nickname });
+        }
+      }
     }
   }
 
   private unfreeze(p: PlayerState) {
     p.frozen = false;
+    p.freeze = Freeze.None;
     p.thawIn = 0;
+    p.draggedBy = "";
     this.thawTimers.delete(p.id);
   }
 
   private cancelSnatch() {
     this.state.potli.snatcherId = "";
     this.state.potli.snatchLeft = 0;
+  }
+
+  private announce(text: string) {
+    this.events.push({ type: "announce", text });
   }
 }

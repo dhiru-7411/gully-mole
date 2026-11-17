@@ -4,9 +4,20 @@
  * The lobby simply re-renders from the server state whenever it changes. With
  * at most 20 players that's instant and much simpler than patching the DOM.
  */
-import { CONFIG, ClientMsg, Phase, ServerMsg, cleanNickname, isValidRoomCode, type Team } from "@gully/shared";
+import {
+  CONFIG,
+  ClientMsg,
+  Phase,
+  ServerEvent,
+  ServerMsg,
+  cleanNickname,
+  isValidRoomCode,
+  type FrozenPingPayload,
+  type WhisperPayload,
+} from "@gully/shared";
 import { createRoom, forget, friendlyError, joinRoom, tryReconnect, type GameRoom } from "./net";
 import { startGame } from "./game/GameScene";
+import { addPing, clearFeed, pushFeed } from "./game/feed";
 
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
 
@@ -95,6 +106,13 @@ function attach(r: GameRoom) {
 
   r.onStateChange(() => render());
   r.onMessage(ServerMsg.Notice, (text: string) => toast(text));
+  // M3: what the server tells only some of us.
+  r.onMessage(ServerEvent.Announce, (text: string) => pushFeed(text, "announce"));
+  r.onMessage(ServerEvent.Whisper, (m: WhisperPayload) => pushFeed(`Mole ${m.from}: ${m.text}`, "whisper"));
+  r.onMessage(ServerEvent.FrozenPing, (m: FrozenPingPayload) => {
+    pushFeed(`${m.name} was just frozen. Follow the white arrow!`, "ping");
+    addPing(m.x, m.y);
+  });
   r.onLeave(() => {
     room = null;
     forget();
@@ -122,17 +140,20 @@ function render() {
   if (game) {
     game.destroy(true);
     game = null;
+    clearFeed();
   }
 
   show("lobby");
   ui.roomCode.textContent = s.code;
-  ui.playerCount.textContent = String(s.players.size);
+  ui.playerCount.textContent = String(s.playerCount);
 
   const isHost = s.hostId === room.sessionId;
   ui.hostControls.classList.toggle("hidden", !isHost);
   ui.botControls.classList.toggle("hidden", !(isHost && s.botsAllowed));
+  $("easy-bots-row").classList.toggle("hidden", !(isHost && s.botsAllowed));
+  $<HTMLInputElement>("easy-bots").checked = s.easyBots;
   ui.waitingHost.classList.toggle("hidden", isHost);
-  ui.btnStart.disabled = s.players.size < CONFIG.lobby.minPlayers;
+  ui.btnStart.disabled = s.playerCount < CONFIG.lobby.minPlayers;
 
   ui.playerList.replaceChildren(
     ...[...s.players.values()].map((p) => {
@@ -162,6 +183,9 @@ function render() {
 ui.btnStart.addEventListener("click", () => room?.send(ClientMsg.Start));
 ui.btnAddBot.addEventListener("click", () => room?.send(ClientMsg.AddBots, { count: 1 }));
 ui.btnFillBots.addEventListener("click", () => room?.send(ClientMsg.AddBots, {}));
+$<HTMLInputElement>("easy-bots").addEventListener("change", (e) =>
+  room?.send(ClientMsg.SetEasyBots, (e.target as HTMLInputElement).checked),
+);
 ui.btnLeave.addEventListener("click", async () => {
   await room?.leave();
   history.replaceState(null, "", location.pathname);

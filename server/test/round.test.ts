@@ -31,6 +31,9 @@ function setup() {
   for (const [id, p] of state.players) {
     p.team = id.startsWith("b") ? "blue" : "green";
     p.role = id === "b0" || id === "g0" ? "leader" : "";
+    // No secret roles unless a test sets them (M3 tests below do).
+    p.secretRole = "";
+    p.realTeam = p.team;
   }
   state.phase = Phase.Playing;
   const P = (id: string) => state.players.get(id)!;
@@ -240,6 +243,7 @@ describe("bots (simulation)", () => {
   /** Runs a whole bots-only game on the server logic, no network. */
   function simulate(seconds: number, setupFn?: (s: ReturnType<typeof setup>) => void, activeIds?: string[]) {
     const s = setup();
+    s.state.easyBots = false; // normal bots (easy bots never grab)
     setupFn?.(s);
     const active = activeIds ?? [...s.state.players.keys()];
     const brains = new Map(active.map((id) => [id, new BotBrain()]));
@@ -276,6 +280,14 @@ describe("bots (simulation)", () => {
     );
     expect(state.winner).toBe("blue");
     expect(state.endReason).toBe("home");
+  });
+
+  it("easy bots (D52) never take the potli", () => {
+    const { grabs, state } = simulate(30, (s) => {
+      s.state.easyBots = true;
+    });
+    expect(grabs).toBe(0);
+    expect(state.potli.carrierId).toBe("");
   });
 
   it("a full bots game has grabs and tags, and finishes or keeps going sensibly", () => {

@@ -230,7 +230,8 @@ describe("GullyRoom movement (M1)", () => {
   it("host sends everyone back to the lobby after a round, and friends can join again", async () => {
     const { room, host } = await startedRoom();
     // End the round: freeze a whole team.
-    for (const p of room.state.players.values()) if (p.team === "green") p.frozen = true;
+    // Wipe-out counts REAL teams (incl. a spy planted in the other team).
+    for (const p of room.state.players.values()) if (p.realTeam === "green") p.frozen = true;
     await room.waitForNextTimestep();
     expect(room.state.phase).toBe(Phase.Ended);
 
