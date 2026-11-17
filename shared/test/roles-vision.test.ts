@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   CONFIG,
   MAP,
+  MAP_SCALE,
   assignRoles,
   bestRoleAction,
   canArrest,
@@ -55,18 +56,22 @@ describe("role assignment (GDD team-size table)", () => {
   });
 });
 
+/** Design units (the 2400 × 1350 board) -> world units. */
+const U = (n: number) => n * MAP_SCALE;
+const POTLI = { x: MAP.middleZone.x, y: MAP.middleZone.y };
+
 describe("line of sight (D51)", () => {
   it("open ground is clear, a building blocks", () => {
-    expect(clearSight({ x: 1100, y: 675 }, { x: 1300, y: 675 })).toBe(true);
-    // Building at x 560..760, y 470..580: look straight through it.
-    expect(clearSight({ x: 660, y: 440 }, { x: 660, y: 610 })).toBe(false);
+    expect(clearSight({ x: U(1100), y: U(675) }, { x: U(1300), y: U(675) })).toBe(true);
+    // Building at design x 560..760, y 470..580: look straight through it.
+    expect(clearSight({ x: U(660), y: U(440) }, { x: U(660), y: U(610) })).toBe(false);
   });
 
   it("canSee respects the vision radius", () => {
     // Straight up from the potli spot is open ground.
     const r = CONFIG.vision.radius;
-    expect(canSee({ x: 1200, y: 675 }, { x: 1200, y: 675 - r + 5 })).toBe(true);
-    expect(canSee({ x: 1200, y: 675 }, { x: 1200, y: 675 - r - 5 })).toBe(false);
+    expect(canSee(POTLI, { x: POTLI.x, y: POTLI.y - r + 5 })).toBe(true);
+    expect(canSee(POTLI, { x: POTLI.x, y: POTLI.y - r - 5 })).toBe(false);
   });
 
   it("Detectives and spies see further than everyone else (D53)", () => {
@@ -75,8 +80,8 @@ describe("line of sight (D51)", () => {
     expect(visionRadius({ secretRole: "spy" })).toBe(CONFIG.vision.roleRadius);
     expect(CONFIG.vision.roleRadius).toBeGreaterThan(CONFIG.vision.radius);
     // A blob just beyond normal range, straight up from the potli spot (open ground):
-    const from = { x: 1200, y: 675 };
-    const to = { x: 1200, y: 675 - (CONFIG.vision.radius + 20) };
+    const from = POTLI;
+    const to = { x: POTLI.x, y: POTLI.y - (CONFIG.vision.radius + 20) };
     expect(canSee(from, to, visionRadius({ secretRole: "" }))).toBe(false);
     expect(canSee(from, to, visionRadius({ secretRole: "spy" }))).toBe(true);
   });
@@ -91,23 +96,29 @@ describe("line of sight (D51)", () => {
   });
 
   it("the visibility polygon stops at walls", () => {
-    const poly = visibilityPolygon({ x: 660, y: 440 }, 300, 360);
-    const down = poly[90]; // angle 90° = straight down, into the building top at y=470
-    expect(down.y).toBeLessThan(475);
+    const o = { x: U(660), y: U(440) };
+    const poly = visibilityPolygon(o, 300, 360);
+    const down = poly[90]; // angle 90° = straight down, into the building top (design y=470)
+    expect(down.y).toBeLessThan(U(470) + 5);
     // ...while some other directions are open all the way to the vision radius.
-    const longest = Math.max(...poly.map((p) => Math.hypot(p.x - 660, p.y - 440)));
+    const longest = Math.max(...poly.map((p) => Math.hypot(p.x - o.x, p.y - o.y)));
     expect(longest).toBeCloseTo(300, 0);
   });
 });
 
 // ------------------------------------------------------------- role rules
 
+/**
+ * `x` is a design-unit spot like 900 or 1540: the hundreds are scaled to the
+ * real map, the small offset (40) is kept as-is so players stay within reach.
+ */
+const X = (x: number) => U(Math.floor(x / 100) * 100) + (x % 100);
 const base = (id: string, team: string, x: number, extra: Partial<RulePlayer> = {}): RulePlayer => ({
   id,
   team,
   role: "",
-  x,
-  y: 675,
+  x: X(x),
+  y: U(675),
   frozen: false,
   protected: false,
   freeze: "",
@@ -153,7 +164,7 @@ describe("spy", () => {
     // A normal Blue player on the Green half is fair game as usual.
     expect(canTag(greenPlayer, base("b", "blue", 1500))).toBe(true);
     // On the Blue half, the spy may tag a Green intruder (looks loyal).
-    const spyHome = { ...spy, x: 900 };
+    const spyHome = { ...spy, x: X(900) };
     expect(canTag(spyHome, base("g", "green", 940))).toBe(true);
   });
 
@@ -187,6 +198,6 @@ describe("shame freeze and rescue", () => {
   it("fireplaces are where the rescue happens", () => {
     const f = MAP.circles.find((c) => c.kind === "fireplace")!;
     expect(nearFireplace({ x: f.x + f.r + 20, y: f.y })).toBe(true);
-    expect(nearFireplace({ x: 1200, y: 675 })).toBe(false);
+    expect(nearFireplace(POTLI)).toBe(false);
   });
 });

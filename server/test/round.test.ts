@@ -6,6 +6,7 @@ import {
   CONFIG,
   GameState,
   MAP,
+  MAP_SCALE,
   Phase,
   PlayerState,
   roundDurationSeconds,
@@ -15,8 +16,8 @@ import { Round } from "../src/game/round";
 import { BotBrain } from "../src/bots";
 
 const DT = 1 / CONFIG.movement.tickRate;
-const BLUE_SIDE = { x: 900, y: 675 }; // Blue half, open ground
-const GREEN_SIDE = { x: 1500, y: 675 }; // Green half, open ground
+const BLUE_SIDE = { x: 900 * MAP_SCALE, y: 675 * MAP_SCALE }; // Blue half, open ground
+const GREEN_SIDE = { x: 1500 * MAP_SCALE, y: 675 * MAP_SCALE }; // Green half, open ground
 
 /** A started round with 4 Blue (b0..b3) and 4 Green (g0..g3). b0 and g0 lead. */
 function setup() {

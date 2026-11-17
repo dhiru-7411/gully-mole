@@ -2,12 +2,12 @@
  * M3 rules on the Round: roles, the spy, the Detective, rescues. No networking.
  */
 import { describe, expect, it } from "vitest";
-import { CONFIG, GameState, MAP, Phase, PlayerState, TEAMS } from "@gully/shared";
+import { CONFIG, GameState, MAP, MAP_SCALE, Phase, PlayerState, TEAMS } from "@gully/shared";
 import { Round } from "../src/game/round";
 
 const DT = 1 / CONFIG.movement.tickRate;
-const BLUE_SIDE = { x: 900, y: 675 };
-const GREEN_SIDE = { x: 1500, y: 675 };
+const BLUE_SIDE = { x: 900 * MAP_SCALE, y: 675 * MAP_SCALE };
+const GREEN_SIDE = { x: 1500 * MAP_SCALE, y: 675 * MAP_SCALE };
 
 /**
  * 4 sit in Blue (b0..b3), 4 in Green (g0..g3).

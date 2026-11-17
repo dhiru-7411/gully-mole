@@ -40,8 +40,8 @@ export const CONFIG = {
   movement: {
     /** Server steps per second. One client input = one step. */
     tickRate: 20,
-    /** World units per second at full stick. Crossing the 2400-wide map takes ~11 s. */
-    playerSpeed: 220,
+    /** World units per second at full stick (D55: was 220). Crossing the 3600-wide map takes ~19 s. */
+    playerSpeed: 190,
     /** Blob radius (diameter 44, docs/ART.md). */
     playerRadius: 22,
     /** Joystick inputs smaller than this fraction are ignored (thumb wobble). */
