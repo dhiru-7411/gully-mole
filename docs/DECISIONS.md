@@ -44,3 +44,6 @@ Rulings on GDD rules that were unclear or conflicting. The GDD stays the source 
 | D21 | Characters | Style C: blobs with eyes, drawn with shapes in code. Blue team wears a cap, Green team a bandana, and green is lighter than blue so color-blind players can tell them apart. |
 | D22 | Map size | The world grows from 1440×810 to 2400×1350, with 48 obstacles. Blob diameter is 44, vision radius 300. |
 | D23 | Camera | Zoom is set per screen so everyone sees the same 650 units of height. Bigger screens make things bigger, not further-seeing. |
+| D24 | Out view | A player who is Out keeps their own camera on their frozen blob, with normal vision. No spectating teammates, so nobody can leak info over voice. |
+| D25 | Fog | Outside your vision the map is dimmed: walls and lanes stay visible. Players, the potli and clues are hidden, and the server never sends them. |
+| D26 | Team names | Not final. "Blue" and "Green" are placeholders, kept in one place in `shared/src/config.ts` so a rename is a one-line change. |
