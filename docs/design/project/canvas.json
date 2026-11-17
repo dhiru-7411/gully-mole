@@ -1,0 +1,18 @@
+{
+  "v": 3,
+  "createdOnFiles": { "v": 1, "at": "2026-11-16T23:40:00Z" },
+  "title": "Gully Mole Design Preview",
+  "launch": { "view": "canvas" },
+  "pages": [],
+  "boards": {
+    "Main.dc.html": { "x": 0, "y": 0, "w": 1280, "h": 720, "title": "1 · Characters: Blue vs Green blobs" },
+    "States.dc.html": { "x": 1360, "y": 0, "w": 1280, "h": 720, "title": "2 · Player states" },
+    "Map.dc.html": { "x": 0, "y": 840, "w": 1600, "h": 1010, "title": "3 · Map layout (bigger)" },
+    "Screen.dc.html": { "x": 1680, "y": 840, "w": 1720, "h": 820, "title": "4 · What your screen shows" }
+  },
+  "order": ["Main.dc.html", "States.dc.html", "Map.dc.html", "Screen.dc.html"],
+  "notes": {
+    "heading": { "x": 0, "y": -300, "text": "Gully Mole: design preview", "kind": "title1", "maxW": 3340 }
+  },
+  "designSystems": []
+}

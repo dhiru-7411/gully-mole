@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Player states</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Space+Grotesk:wght@600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#ffd43b}a:hover{color:#ffe680}
+</style>
+</helmet>
+<div style="width: 1280px; height: 720px; box-sizing: border-box; padding: 44px 56px; background: #1b1d24; color: #f1f2f6; font-family: Inter, system-ui, sans-serif; display: flex; flex-direction: column; gap: 24px">
+
+  <div style="display: flex; flex-direction: column; gap: 8px">
+    <h1 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 40px; letter-spacing: -0.5px">Player states</h1>
+    <p style="margin: 0; color: #a7adc0; font-size: 17px; max-width: 1040px">One color and one icon per state. Blobs are busy, so the overlays are bold. The spy looks exactly like the team they sit in; only the iced hand can give them away.</p>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 16px">
+
+    <article style="background: #262934; border: 1px solid #3a3e4c; border-radius: 16px; padding: 16px; display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center">
+      <svg width="96" height="96" viewBox="-20 -24 140 140" role="img" aria-label="Normal blue blob">
+        <circle cx="50" cy="56" r="38" fill="#4a83ff" stroke="#11131a" stroke-width="3"></circle><rect x="27" y="10" width="46" height="18" rx="7" fill="#16316f"></rect><rect x="24" y="24" width="58" height="7" rx="3.5" fill="#0d1f4a"></rect><circle cx="58" cy="52" r="9" fill="#ffffff"></circle><circle cx="77" cy="52" r="9" fill="#ffffff"></circle><circle cx="62" cy="52" r="4.5" fill="#11131a"></circle><circle cx="81" cy="52" r="4.5" fill="#11131a"></circle>
+      </svg>
+      <h2 style="margin: 0; font-size: 15px; font-weight: 600">Normal</h2>
+      <p style="margin: 0; font-size: 13px; line-height: 1.45; color: #a7adc0">Free to move, tag and carry.</p>
+    </article>
+
+    <article style="background: #262934; border: 1px solid #3a3e4c; border-radius: 16px; padding: 16px; display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center">
+      <svg width="96" height="96" viewBox="-20 -24 140 140" role="img" aria-label="Green blob carrying the gold potli, with a gold ring">
+        <circle cx="50" cy="56" r="46" fill="none" stroke="#ffd43b" stroke-width="4"></circle>
+        <circle cx="50" cy="56" r="38" fill="#3fd17a" stroke="#11131a" stroke-width="3"></circle><path d="M38 24 Q43 8 50 20 Q57 6 62 24 Z" fill="#0f4d2c"></path><rect x="18" y="22" width="64" height="10" rx="5" fill="#0f4d2c"></rect><path d="M22 27 L6 18 L11 28 L5 38 Z" fill="#0f4d2c"></path><circle cx="58" cy="52" r="9" fill="#ffffff"></circle><circle cx="77" cy="52" r="9" fill="#ffffff"></circle><circle cx="62" cy="52" r="4.5" fill="#11131a"></circle><circle cx="81" cy="52" r="4.5" fill="#11131a"></circle>
+        <g transform="translate(70 -26) scale(0.46)">
+          <path d="M42 34 L34 24 L50 29 L66 24 L58 34 Z" fill="#ffd43b" stroke="#11131a" stroke-width="4" stroke-linejoin="round"></path>
+          <path d="M40 38 C28 52 28 76 50 78 C72 76 72 52 60 38 Z" fill="#ffd43b" stroke="#11131a" stroke-width="4"></path>
+          <rect x="39" y="32" width="22" height="8" rx="4" fill="#d4a017" stroke="#11131a" stroke-width="3"></rect>
+        </g>
+      </svg>
+      <h2 style="margin: 0; font-size: 15px; font-weight: 600">Carrying the object</h2>
+      <p style="margin: 0; font-size: 13px; line-height: 1.45; color: #a7adc0">Gold ring + the potli.</p>
+    </article>
+
+    <article style="background: #262934; border: 1px solid #3a3e4c; border-radius: 16px; padding: 16px; display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center">
+      <svg width="96" height="96" viewBox="-20 -24 140 140" role="img" aria-label="Frozen blob inside light blue ice with a snowflake icon">
+        <circle cx="50" cy="56" r="38" fill="#4a83ff" stroke="#11131a" stroke-width="3"></circle><rect x="27" y="10" width="46" height="18" rx="7" fill="#16316f"></rect><rect x="24" y="24" width="58" height="7" rx="3.5" fill="#0d1f4a"></rect><circle cx="58" cy="52" r="9" fill="#ffffff"></circle><circle cx="77" cy="52" r="9" fill="#ffffff"></circle><circle cx="58" cy="52" r="4.5" fill="#11131a"></circle><circle cx="77" cy="52" r="4.5" fill="#11131a"></circle>
+        <rect x="2" y="4" width="96" height="96" rx="28" fill="#9be7ff" fill-opacity="0.55" stroke="#d5f6ff" stroke-width="4"></rect>
+        <circle cx="96" cy="4" r="15" fill="#9be7ff" stroke="#11131a" stroke-width="2"></circle>
+        <path d="M96 -5 V13 M88 -1 L104 9 M88 9 L104 -1" stroke="#11131a" stroke-width="2.5" stroke-linecap="round"></path>
+      </svg>
+      <h2 style="margin: 0; font-size: 15px; font-weight: 600">Frozen</h2>
+      <p style="margin: 0; font-size: 13px; line-height: 1.45; color: #a7adc0">Light blue ice. Identical whether an enemy or the spy did it.</p>
+    </article>
+
+    <article style="background: #262934; border: 1px solid #3a3e4c; border-radius: 16px; padding: 16px; display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center">
+      <svg width="96" height="96" viewBox="-20 -24 140 140" role="img" aria-label="Shame-frozen Detective in dark red ice with a handcuff icon">
+        <circle cx="50" cy="56" r="38" fill="#4a83ff" stroke="#11131a" stroke-width="3"></circle><rect x="27" y="10" width="46" height="18" rx="7" fill="#16316f"></rect><rect x="24" y="24" width="58" height="7" rx="3.5" fill="#0d1f4a"></rect><circle cx="58" cy="52" r="9" fill="#ffffff"></circle><circle cx="77" cy="52" r="9" fill="#ffffff"></circle><circle cx="58" cy="56" r="4.5" fill="#11131a"></circle><circle cx="77" cy="56" r="4.5" fill="#11131a"></circle>
+        <rect x="2" y="4" width="96" height="96" rx="28" fill="#8b1e2d" fill-opacity="0.7" stroke="#e0566b" stroke-width="4"></rect>
+        <circle cx="96" cy="4" r="15" fill="#e0566b" stroke="#11131a" stroke-width="2"></circle>
+        <circle cx="90" cy="5" r="5" fill="none" stroke="#11131a" stroke-width="2.5"></circle>
+        <circle cx="102" cy="5" r="5" fill="none" stroke="#11131a" stroke-width="2.5"></circle>
+      </svg>
+      <h2 style="margin: 0; font-size: 15px; font-weight: 600">Shame freeze</h2>
+      <span style="font-size: 12px; font-weight: 600; color: #ffd0d7; background: #8b1e2d; border-radius: 999px; padding: 4px 10px">1 rescue left</span>
+      <p style="margin: 0; font-size: 13px; line-height: 1.45; color: #a7adc0">Wrong arrest. Drag to a fireplace.</p>
+    </article>
+
+    <article style="background: #262934; border: 1px solid #3a3e4c; border-radius: 16px; padding: 16px; display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center">
+      <svg width="96" height="96" viewBox="-20 -24 140 140" role="img" aria-label="Out: grey blob with X eyes in cracked grey ice">
+        <circle cx="50" cy="56" r="38" fill="#6b7080" stroke="#11131a" stroke-width="3"></circle><rect x="27" y="10" width="46" height="18" rx="7" fill="#4a4e5c"></rect><rect x="24" y="24" width="58" height="7" rx="3.5" fill="#3d414d"></rect>
+        <path d="M53 47 L63 57 M63 47 L53 57 M72 47 L82 57 M82 47 L72 57" stroke="#11131a" stroke-width="3.5" stroke-linecap="round"></path>
+        <rect x="2" y="4" width="96" height="96" rx="28" fill="#9aa0b4" fill-opacity="0.35" stroke="#c4c8d4" stroke-width="4"></rect>
+        <path d="M16 18 L40 46 L28 70 L44 94 M40 46 L70 38 L86 62 M70 38 L74 12" fill="none" stroke="#eef0f5" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"></path>
+      </svg>
+      <h2 style="margin: 0; font-size: 15px; font-weight: 600">Out</h2>
+      <p style="margin: 0; font-size: 13px; line-height: 1.45; color: #a7adc0">Cracked grey ice, X eyes. Caught spy or 2nd wrong arrest.</p>
+    </article>
+
+    <article style="background: #262934; border: 1px solid #3a3e4c; border-radius: 16px; padding: 16px; display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center">
+      <svg width="96" height="96" viewBox="-20 -24 140 140" role="img" aria-label="Leader blob with a fire lamp icon">
+        <circle cx="50" cy="56" r="38" fill="#4a83ff" stroke="#11131a" stroke-width="3"></circle><rect x="27" y="10" width="46" height="18" rx="7" fill="#16316f"></rect><rect x="24" y="24" width="58" height="7" rx="3.5" fill="#0d1f4a"></rect><circle cx="58" cy="52" r="9" fill="#ffffff"></circle><circle cx="77" cy="52" r="9" fill="#ffffff"></circle><circle cx="62" cy="52" r="4.5" fill="#11131a"></circle><circle cx="81" cy="52" r="4.5" fill="#11131a"></circle>
+        <circle cx="96" cy="4" r="15" fill="#ff8a3d" stroke="#11131a" stroke-width="2"></circle>
+        <path d="M96 -6 C103 1 105 7 101 12 C99 15 93 15 91 12 C88 7 91 2 96 -6 Z" fill="#ffd43b" stroke="#11131a" stroke-width="1.5"></path>
+      </svg>
+      <h2 style="margin: 0; font-size: 15px; font-weight: 600">Leader</h2>
+      <p style="margin: 0; font-size: 13px; line-height: 1.45; color: #a7adc0">Fire lamp. Everyone can see who leads.</p>
+    </article>
+
+    <article style="background: #262934; border: 1px solid #3a3e4c; border-radius: 16px; padding: 16px; display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center">
+      <svg width="96" height="96" viewBox="-20 -24 140 140" role="img" aria-label="Detective blob with a star badge">
+        <circle cx="50" cy="56" r="38" fill="#4a83ff" stroke="#11131a" stroke-width="3"></circle><rect x="27" y="10" width="46" height="18" rx="7" fill="#16316f"></rect><rect x="24" y="24" width="58" height="7" rx="3.5" fill="#0d1f4a"></rect><circle cx="58" cy="52" r="9" fill="#ffffff"></circle><circle cx="77" cy="52" r="9" fill="#ffffff"></circle><circle cx="62" cy="52" r="4.5" fill="#11131a"></circle><circle cx="81" cy="52" r="4.5" fill="#11131a"></circle>
+        <circle cx="96" cy="4" r="15" fill="#ffd43b" stroke="#11131a" stroke-width="2"></circle>
+        <polygon points="96,-6 98.9,0.1 105.5,0.9 100.6,5.5 101.9,12.1 96,8.8 90.1,12.1 91.4,5.5 86.5,0.9 93.1,0.1" fill="#11131a"></polygon>
+      </svg>
+      <h2 style="margin: 0; font-size: 15px; font-weight: 600">Detective</h2>
+      <p style="margin: 0; font-size: 13px; line-height: 1.45; color: #a7adc0">Badge seen only by own team (incl. the spy inside it).</p>
+    </article>
+
+    <article style="background: #262934; border: 1px solid #3a3e4c; border-radius: 16px; padding: 16px; display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center">
+      <svg width="96" height="96" viewBox="-20 -24 140 140" role="img" aria-label="A blue-looking blob with a dashed green ring and an eye icon: Green's planted spy">
+        <circle cx="50" cy="56" r="48" fill="none" stroke="#3fd17a" stroke-width="4" stroke-dasharray="9 7"></circle>
+        <circle cx="50" cy="56" r="38" fill="#4a83ff" stroke="#11131a" stroke-width="3"></circle><rect x="27" y="10" width="46" height="18" rx="7" fill="#16316f"></rect><rect x="24" y="24" width="58" height="7" rx="3.5" fill="#0d1f4a"></rect><circle cx="58" cy="52" r="9" fill="#ffffff"></circle><circle cx="77" cy="52" r="9" fill="#ffffff"></circle><circle cx="62" cy="52" r="4.5" fill="#11131a"></circle><circle cx="81" cy="52" r="4.5" fill="#11131a"></circle>
+        <circle cx="96" cy="4" r="15" fill="#3fd17a" stroke="#11131a" stroke-width="2"></circle>
+        <path d="M86 4 Q96 -5 106 4 Q96 13 86 4 Z" fill="#11131a"></path>
+        <circle cx="96" cy="4" r="3" fill="#3fd17a"></circle>
+      </svg>
+      <h2 style="margin: 0; font-size: 15px; font-weight: 600">Our mole</h2>
+      <p style="margin: 0; font-size: 13px; line-height: 1.45; color: #a7adc0">Green sees this on their spy inside Blue. Blue sees a normal teammate.</p>
+    </article>
+
+    <article style="background: #262934; border: 1px solid #3a3e4c; border-radius: 16px; padding: 16px; display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center">
+      <svg width="96" height="96" viewBox="-20 -24 140 140" role="img" aria-label="Blob with a small blue glow on one hand">
+        <circle cx="50" cy="56" r="38" fill="#4a83ff" stroke="#11131a" stroke-width="3"></circle><rect x="27" y="10" width="46" height="18" rx="7" fill="#16316f"></rect><rect x="24" y="24" width="58" height="7" rx="3.5" fill="#0d1f4a"></rect><circle cx="58" cy="52" r="9" fill="#ffffff"></circle><circle cx="77" cy="52" r="9" fill="#ffffff"></circle><circle cx="62" cy="52" r="4.5" fill="#11131a"></circle><circle cx="81" cy="52" r="4.5" fill="#11131a"></circle>
+        <circle cx="88" cy="84" r="17" fill="#7fdcff" fill-opacity="0.32"></circle>
+        <circle cx="88" cy="84" r="8" fill="#bff0ff" stroke="#11131a" stroke-width="2"></circle>
+      </svg>
+      <h2 style="margin: 0; font-size: 15px; font-weight: 600">Iced hand</h2>
+      <p style="margin: 0; font-size: 13px; line-height: 1.45; color: #a7adc0">The spy's clue. Only nearby players see it. 20 s or until a fireplace.</p>
+    </article>
+
+    <article style="background: #262934; border: 1px solid #3a3e4c; border-radius: 16px; padding: 16px; display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center">
+      <svg width="96" height="96" viewBox="-20 -24 140 140" role="img" aria-label="A trail of fading footprints">
+        <ellipse cx="4" cy="104" rx="6" ry="9" fill="#cfd3de" fill-opacity="0.95" transform="rotate(35 4 104)"></ellipse>
+        <ellipse cx="22" cy="96" rx="6" ry="9" fill="#cfd3de" fill-opacity="0.9" transform="rotate(35 22 96)"></ellipse>
+        <ellipse cx="30" cy="76" rx="6" ry="9" fill="#cfd3de" fill-opacity="0.8" transform="rotate(35 30 76)"></ellipse>
+        <ellipse cx="48" cy="68" rx="6" ry="9" fill="#cfd3de" fill-opacity="0.7" transform="rotate(35 48 68)"></ellipse>
+        <ellipse cx="56" cy="48" rx="6" ry="9" fill="#cfd3de" fill-opacity="0.55" transform="rotate(35 56 48)"></ellipse>
+        <ellipse cx="74" cy="40" rx="6" ry="9" fill="#cfd3de" fill-opacity="0.45" transform="rotate(35 74 40)"></ellipse>
+        <ellipse cx="82" cy="20" rx="6" ry="9" fill="#cfd3de" fill-opacity="0.32" transform="rotate(35 82 20)"></ellipse>
+        <ellipse cx="100" cy="12" rx="6" ry="9" fill="#cfd3de" fill-opacity="0.2" transform="rotate(35 100 12)"></ellipse>
+      </svg>
+      <h2 style="margin: 0; font-size: 15px; font-weight: 600">Footprints</h2>
+      <p style="margin: 0; font-size: 13px; line-height: 1.45; color: #a7adc0">Left by a secret freeze. No name, fade over 20 s.</p>
+    </article>
+
+    <article style="background: #262934; border: 1px solid #3a3e4c; border-radius: 16px; padding: 16px; display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center">
+      <svg width="96" height="96" viewBox="-20 -24 140 140" role="img" aria-label="Blob with a dashed white shield ring">
+        <circle cx="50" cy="56" r="48" fill="none" stroke="#f1f2f6" stroke-width="4" stroke-dasharray="4 6" stroke-linecap="round"></circle>
+        <circle cx="50" cy="56" r="38" fill="#4a83ff" stroke="#11131a" stroke-width="3"></circle><rect x="27" y="10" width="46" height="18" rx="7" fill="#16316f"></rect><rect x="24" y="24" width="58" height="7" rx="3.5" fill="#0d1f4a"></rect><circle cx="58" cy="52" r="9" fill="#ffffff"></circle><circle cx="77" cy="52" r="9" fill="#ffffff"></circle><circle cx="62" cy="52" r="4.5" fill="#11131a"></circle><circle cx="81" cy="52" r="4.5" fill="#11131a"></circle>
+      </svg>
+      <h2 style="margin: 0; font-size: 15px; font-weight: 600">Protected</h2>
+      <p style="margin: 0; font-size: 13px; line-height: 1.45; color: #a7adc0">Leader just thawed: can't be frozen for 2–3 s.</p>
+    </article>
+
+    <article style="background: #262934; border: 1px solid #3a3e4c; border-radius: 16px; padding: 16px; display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center">
+      <svg width="96" height="96" viewBox="-20 -24 140 140" role="img" aria-label="Faded sleeping blob with an unplugged icon">
+        <g opacity="0.4">
+          <circle cx="50" cy="56" r="38" fill="#4a83ff" stroke="#11131a" stroke-width="3"></circle><rect x="27" y="10" width="46" height="18" rx="7" fill="#16316f"></rect><rect x="24" y="24" width="58" height="7" rx="3.5" fill="#0d1f4a"></rect>
+          <path d="M52 53 Q58 58 64 53 M71 53 Q77 58 83 53" fill="none" stroke="#11131a" stroke-width="3" stroke-linecap="round"></path>
+        </g>
+        <circle cx="96" cy="4" r="15" fill="#3a3e4c" stroke="#11131a" stroke-width="2"></circle>
+        <path d="M91 -4 V2 M101 -4 V2 M88 2 H104 V6 C104 10 100 12 96 12 C92 12 88 10 88 6 Z" fill="none" stroke="#f1f2f6" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"></path>
+      </svg>
+      <h2 style="margin: 0; font-size: 15px; font-weight: 600">Disconnected</h2>
+      <p style="margin: 0; font-size: 13px; line-height: 1.45; color: #a7adc0">Faded, eyes closed. Can still be frozen or robbed.</p>
+    </article>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":720}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>
