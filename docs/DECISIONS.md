@@ -35,3 +35,12 @@ Rulings on GDD rules that were unclear or conflicting. The GDD stays the source 
 | D17 | Host leaves | Host passes to the earliest-joined human who is still connected. Bots never host. |
 | D18 | Dev bots | Bots count toward the 8-player minimum. Allowed unless `NODE_ENV=production` (override: `ALLOW_BOTS=true`). |
 | D19 | Max players | 20 per room for now (configurable). |
+
+## Art and map (owner, 2026-11-16) — details in `docs/ART.md`
+
+| # | Topic | Decision |
+| --- | --- | --- |
+| D20 | Theme | The teams are **Blue** and **Green**, and each base is a **den** in its color. The Police/Chor theme is dropped from the visuals. The rules don't change: wherever the GDD says "Police" or "Chor", read "Blue team" or "Green team". |
+| D21 | Characters | Style C: blobs with eyes, drawn with shapes in code. Blue team wears a cap, Green team a bandana, and green is lighter than blue so color-blind players can tell them apart. |
+| D22 | Map size | The world grows from 1440×810 to 2400×1350, with 48 obstacles. Blob diameter is 44, vision radius 300. |
+| D23 | Camera | Zoom is set per screen so everyone sees the same 650 units of height. Bigger screens make things bigger, not further-seeing. |
