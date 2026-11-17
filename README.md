@@ -1,6 +1,6 @@
 # Gully Mole
 
-A 2D top-down, real-time multiplayer party game for the browser. Two teams, Blue and Green, race to grab the potli from the middle of the map and bring it to their den, while each team secretly carries a spy from the other side.
+A 2D top-down, real-time multiplayer party game for the browser. Two teams, Blue and Green, race to grab the potli from the middle of the map and carry it into the other team's den (like scoring a goal), while each team secretly carries a spy from the other side.
 
 - Rules: [`docs/GDD.md`](docs/GDD.md) (source of truth; "Police/Chor" in it now means Blue/Green, see D20)
 - Rulings on unclear rules: [`docs/DECISIONS.md`](docs/DECISIONS.md)
@@ -12,8 +12,9 @@ A 2D top-down, real-time multiplayer party game for the browser. Two teams, Blue
 | --- | --- |
 | M0 Scaffold: rooms by 4-digit code, lobby, host start, dev bots | ✅ done |
 | M1 Movement: map, blobs, server-authoritative movement, prediction, joystick, wandering bots | ✅ done |
-| M2 Capture the object | next |
-| M3–M6 | not started |
+| M2 Capture the object: potli, tag/freeze, Leader's lamp, snatch, pass, timer, winning, smarter bots | ✅ done |
+| M3 Roles and secrets (Detective, spies, limited vision) | next |
+| M4–M6 | not started |
 
 ## Requirements
 
@@ -36,17 +37,37 @@ Open http://localhost:5173, type a nickname and press **Create room**. Share the
 
 ### Controls
 
-| Device | Move |
-| --- | --- |
-| Laptop | WASD or arrow keys |
-| Phone / tablet | Touch anywhere on the **left side** and drag: a joystick appears under your thumb. Push further to go faster. |
+| | Laptop | Phone / tablet |
+| --- | --- | --- |
+| Move | WASD or arrow keys | Touch anywhere on the **left side** and drag: a joystick appears under your thumb |
+| Big smart button | **Space** | Big round button, bottom right |
+| Pass | **E** | Small **Pass** button (only shows when you can pass) |
 
-Phones work best held sideways (landscape). The right side of the screen is kept free for action buttons (M2).
+The big button's label changes to what you can do right now (D32). If two things are possible, the more urgent one wins:
+
+| Label | When |
+| --- | --- |
+| **Unfreeze** | You're the Leader, beside a frozen teammate |
+| **Tag** | An enemy standing on **your** half is within reach: freezes them |
+| **Snatch** | Beside an enemy carrying the potli: a 3 s countdown starts, and stay beside them to take it |
+| **Grab** | Standing on the loose potli |
+
+### How a round works (M2)
+
+- Teams and one Leader per team are picked at random. Everyone spawns in their own den.
+- **Score by carrying the potli into the enemy's den** (far end of their half, D39). Defend your own den.
+- You can only tag enemies who stand on **your** half. Frozen players drop the potli and can't move.
+- Only your **Leader** can unfreeze you. A frozen Leader thaws by themselves after 10 s and is protected for a moment. Teammates see an arrow to a frozen Leader, and the Leader always sees an arrow to the potli.
+- Carrying slows you down (D38). A Leader carrying it is faster, unless a teammate is frozen.
+- **Win by:** scoring, or freezing the whole other team at once (wipe-out). Running out of time is a draw for now (M5 adds stats).
+- After a round, the host presses **Back to lobby** to play again.
+
+Phones work best held sideways (landscape).
 
 ### Testing alone
 
 - **Several tabs:** each browser tab is a separate player. Open the invite link in new tabs.
-- **Dev bots:** as host, press **Fill with bots** to reach 8 players, or **+1 bot**. In a round, bots wander the map. Bots are on by default in development and off when `NODE_ENV=production` (set `ALLOW_BOTS=true` to force them on).
+- **Dev bots:** as host, press **Fill with bots** to reach 8 players, or **+1 bot**. In a round, bots play positions (defenders, attackers, Leader rescues) and press the same buttons you do. Bots are on by default in development and off when `NODE_ENV=production` (set `ALLOW_BOTS=true` to force them on).
 - **Debug:** in development, the browser console has `window.__gully.room.state` (live room state).
 - **See the whole map:** in development, open http://localhost:5173/?overview to zoom out to the full map. It's for testing only; real players always get the follow camera.
 
@@ -82,20 +103,23 @@ gully-mole/
 │       ├── config.ts    ← every tunable number (speeds, timers, distances, team names, weights…)
 │       ├── map.ts       the map as data (Blue half written out, Green half = turned 180°)
 │       ├── movement.ts  the one movement step + wall collisions (server AND client run it)
+│       ├── rules.ts     who can tag / unfreeze / snatch / grab / pass right now (server decides, client labels the button)
 │       ├── teams.ts     random team split + spawn spots
 │       ├── lobby.ts     lobby rules: room codes, nicknames, start check, host hand-over, round timer
 │       ├── schema.ts    the synced room state + the input message
 │       └── messages.ts  message names between client and server
 ├── server/   Colyseus game server (all game decisions happen here)
 │   ├── src/rooms/GullyRoom.ts   lobby + 20-ticks/second simulation
-│   ├── src/bots.ts              dev bot "brains"
+│   ├── src/game/round.ts        one round: actions, snatch countdown, Leader thaw, timer, win checks
+│   ├── src/bots.ts              dev bot "brains" (defenders / attackers / Leader)
+│   ├── src/nav.ts               bot pathfinding through the lanes (flow fields)
 │   └── test/                    integration tests against a real in-process server
 ├── client/   Phaser website (sends inputs, shows state)
 │   ├── index.html       home + lobby screens (plain HTML, phone friendly)
 │   └── src/
 │       ├── main.ts      screen flow and lobby rendering
 │       ├── net.ts       connecting, joining by code, reconnect after refresh
-│       └── game/        GameScene (prediction, camera), Blob, map drawing, controls
+│       └── game/        GameScene (prediction, camera, arrows), Blob, Potli, HUD (buttons, timer, end screen), controls
 └── docs/
 ```
 

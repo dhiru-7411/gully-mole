@@ -19,7 +19,18 @@ export const ClientMsg = {
   AddBots: "addBots",
   /** Host only, dev: remove one bot by id. */
   RemoveBot: "removeBot",
+  /** The big smart button (D32). Payload: ActionPayload. The server re-checks everything. */
+  Action: "action",
+  /** The Pass button: hand the potli to the nearest teammate beside you. */
+  Pass: "pass",
+  /** Host only, after a round ends: everyone back to the lobby. */
+  BackToLobby: "backToLobby",
 } as const;
+
+export interface ActionPayload {
+  kind: string;
+  targetId?: string;
+}
 
 /** Server -> one client. */
 export const ServerMsg = {

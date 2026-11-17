@@ -206,6 +206,43 @@ describe("GullyRoom movement (M1)", () => {
     for (const b of bots) expect(isBlocked(b.x, b.y, CONFIG.movement.playerRadius - 0.01)).toBe(false);
   });
 
+  it("the Action message tags an enemy on your half (and the server re-checks the rules)", async () => {
+    const { room, host } = await startedRoom();
+    const me = room.state.players.get(host.sessionId)!;
+    const enemy = [...room.state.players.values()].find((p) => p.team && p.team !== me.team)!;
+    // Put both on MY half, side by side, and freeze time for bots by ending their influence.
+    const myHalfX = me.team === "blue" ? 900 : 1500;
+    me.x = myHalfX;
+    me.y = 675;
+    enemy.x = myHalfX + 40;
+    enemy.y = 675;
+
+    // A wrong kind is ignored.
+    host.send(ClientMsg.Action, { kind: "teleport", targetId: enemy.id });
+    await room.waitForNextMessage();
+    expect(enemy.frozen).toBe(false);
+
+    host.send(ClientMsg.Action, { kind: "tag", targetId: enemy.id });
+    await room.waitForNextMessage();
+    expect(enemy.frozen).toBe(true);
+  });
+
+  it("host sends everyone back to the lobby after a round, and friends can join again", async () => {
+    const { room, host } = await startedRoom();
+    // End the round: freeze a whole team.
+    for (const p of room.state.players.values()) if (p.team === "green") p.frozen = true;
+    await room.waitForNextTimestep();
+    expect(room.state.phase).toBe(Phase.Ended);
+
+    host.send(ClientMsg.BackToLobby);
+    await room.waitForNextMessage();
+    expect(room.state.phase).toBe(Phase.Lobby);
+    expect([...room.state.players.values()].every((p) => p.team === "" && !p.frozen)).toBe(true);
+
+    const late = await colyseus.sdk.joinById(room.roomId, { nickname: "Late" });
+    expect(late.sessionId).toBeTruthy();
+  });
+
   it("ignores movement in the lobby", async () => {
     const { room, host } = await createWithHost();
     const me = room.state.players.get(host.sessionId)!;
