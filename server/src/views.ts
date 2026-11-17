@@ -23,6 +23,7 @@ import {
   SecretRole,
   TAG,
   canSee,
+  visionRadius,
   dist,
   type GameState,
   type PlayerState,
@@ -79,7 +80,7 @@ export class ViewSync {
     const wantSecret = new Set<string>();
     const wantNear = new Set<string>();
     for (const [id, p] of s.players) {
-      const visible = reveal || !me || id === viewerId || canSee(me, p) || this.isMyFrozenLeader(me, p);
+      const visible = reveal || !me || id === viewerId || canSee(me, p, visionRadius(me)) || this.isMyFrozenLeader(me, p);
       if (!visible) continue;
       wantPlayers.add(id);
       if (endReveal || (me && this.mayKnowSecret(me, p))) wantSecret.add(id);
@@ -112,7 +113,7 @@ export class ViewSync {
       !me ||
       me.role === "leader" ||
       s.potli.carrierId === viewerId ||
-      (carrier ? wantPlayers.has(carrier.id) : canSee(me, s.potli));
+      (carrier ? wantPlayers.has(carrier.id) : canSee(me, s.potli, visionRadius(me)));
     if (potliVisible !== seen.potli) {
       if (potliVisible) view.add(s.potli);
       else view.remove(s.potli);
@@ -122,7 +123,7 @@ export class ViewSync {
     // Footprints.
     const wantPrints = new Set<string>();
     if (!reveal && me) {
-      for (const [fid, f] of s.footprints) if (canSee(me, f)) wantPrints.add(fid);
+      for (const [fid, f] of s.footprints) if (canSee(me, f, visionRadius(me))) wantPrints.add(fid);
     }
     this.diff(seen.prints, wantPrints, (fid) => {
       const f = s.footprints.get(fid);

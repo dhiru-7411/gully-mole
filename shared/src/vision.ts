@@ -67,6 +67,14 @@ export function sightFraction(a: Point, b: Point): number {
   return best;
 }
 
+/**
+ * How far this player can see (D53): Detectives and spies a bit further than
+ * everyone else. The server uses it to filter; the client to draw your fog.
+ */
+export function visionRadius(p: { secretRole?: string }): number {
+  return p.secretRole === "detective" || p.secretRole === "spy" ? CONFIG.vision.roleRadius : CONFIG.vision.radius;
+}
+
 /** True if nothing blocks the straight line from a to b. */
 export function clearSight(a: Point, b: Point): boolean {
   return sightFraction(a, b) >= 1;

@@ -15,6 +15,7 @@ import {
   nearFireplace,
   spiesFor,
   visibilityPolygon,
+  visionRadius,
   type RulePlayer,
 } from "../src";
 
@@ -65,6 +66,22 @@ describe("line of sight (D51)", () => {
     const r = CONFIG.vision.radius;
     expect(canSee({ x: 1200, y: 675 }, { x: 1200, y: 675 - r + 5 })).toBe(true);
     expect(canSee({ x: 1200, y: 675 }, { x: 1200, y: 675 - r - 5 })).toBe(false);
+  });
+
+  it("Detectives and spies see further than everyone else (D53)", () => {
+    expect(visionRadius({ secretRole: "" })).toBe(CONFIG.vision.radius);
+    expect(visionRadius({ secretRole: "detective" })).toBe(CONFIG.vision.roleRadius);
+    expect(visionRadius({ secretRole: "spy" })).toBe(CONFIG.vision.roleRadius);
+    expect(CONFIG.vision.roleRadius).toBeGreaterThan(CONFIG.vision.radius);
+    // A blob just beyond normal range, straight up from the potli spot (open ground):
+    const from = { x: 1200, y: 675 };
+    const to = { x: 1200, y: 675 - (CONFIG.vision.radius + 20) };
+    expect(canSee(from, to, visionRadius({ secretRole: "" }))).toBe(false);
+    expect(canSee(from, to, visionRadius({ secretRole: "spy" }))).toBe(true);
+  });
+
+  it("the vision circle fits on screen (camera shows more than you can see)", () => {
+    expect(CONFIG.vision.roleRadius * 2).toBeLessThanOrEqual(CONFIG.camera.viewHeight + 60);
   });
 
   it("fireplaces don't block sight", () => {

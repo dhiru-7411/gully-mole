@@ -57,11 +57,14 @@ export const CONFIG = {
     dragSpeedMultiplier: 0.5,
   },
 
-  /** Each player sees a circle of this radius, blocked by obstacles. */
+  /** Each player sees a circle of this radius, blocked by obstacles (D53: owner tuned it down). */
   vision: {
-    radius: 300,
+    /** Normal players and Leaders. */
+    radius: 230,
+    /** Detectives and spies see a bit further: they're the ones hunting / sneaking (D53). */
+    roleRadius: 280,
     /** The spy's iced hand is only visible this close (GDD: "visible only to players close by"). */
-    nearRadius: 160,
+    nearRadius: 140,
   },
 
   /** Footprints after a secret freeze (GDD: ~20 s). */
@@ -74,7 +77,8 @@ export const CONFIG = {
 
   /** Every screen shows this many world units of height (DECISIONS D23). */
   camera: {
-    viewHeight: 650,
+    /** Zoomed in (D53): was 650. Smaller = closer camera, less of the map on screen. */
+    viewHeight: 520,
     /** 0–1: how quickly the camera catches up with you (1 = locked on). */
     followLerp: 0.2,
   },

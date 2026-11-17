@@ -18,6 +18,7 @@ import {
   bestAction,
   bestRoleAction,
   canSee,
+  visionRadius,
   dist,
   enemyOf,
   goalDen,
@@ -98,7 +99,7 @@ export class BotBrain {
     if (me.secretRole === "spy") {
       const unwatched = (exceptId: string) =>
         !players.some(
-          (w) => w.team === team && w.realTeam === team && !w.frozen && w.id !== exceptId && canSee(w, me),
+          (w) => w.team === team && w.realTeam === team && !w.frozen && w.id !== exceptId && canSee(w, me, visionRadius(w)),
         );
       if (roleAct?.kind === "free" && unwatched("")) d.roleAction = roleAct;
       if (roleAct?.kind === "ice" && unwatched(roleAct.targetId) && this.random() < 0.03) d.roleAction = roleAct;
@@ -121,7 +122,7 @@ export class BotBrain {
       const suspect = nearestOf(
         me,
         players,
-        (p) => p.team === team && p.id !== me.id && p.icedHand && dist(me, p) <= CONFIG.vision.nearRadius && canSee(me, p),
+        (p) => p.team === team && p.id !== me.id && p.icedHand && dist(me, p) <= CONFIG.vision.nearRadius && canSee(me, p, visionRadius(me)),
       );
       if (suspect) {
         if (roleAct?.kind === "arrest" && roleAct.targetId === suspect.id) d.roleAction = roleAct;

@@ -38,10 +38,10 @@ A gold **potli** (pouch) `#FFD43B`.
 
 ## Sizes and camera
 
-- Blob diameter **44** units (radius 22). Vision radius **300**.
-- The camera follows you, and its zoom is chosen so the screen always shows **650 units of height**:
-  - phone in landscape: blobs about 26 px
-  - laptop at full screen: blobs about 60 px
+- Blob diameter **44** units (radius 22). Vision radius **230** (Detectives and spies **280**, D53).
+- The camera follows you, and its zoom is chosen so the screen always shows **520 units of height** (D53; was 650):
+  - phone in landscape: blobs about 33 px
+  - laptop at full screen: blobs about 76 px
 - Same view area for everyone, so a bigger screen gives no advantage.
 - Phones: joystick bottom-left, action buttons bottom-right, landscape suggested.
 

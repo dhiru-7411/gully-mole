@@ -22,6 +22,7 @@ import {
   speedMultiplier,
   stepPlayer,
   visibilityPolygon,
+  visionRadius,
   type MoveInput,
   type PlayerState,
   type RulePlayer,
@@ -245,7 +246,7 @@ export class GameScene extends Phaser.Scene {
     if (!me || s.phase !== "playing" || this.overview) return;
 
     const origin = { x: this.predict.value(me, "x"), y: this.predict.value(me, "y") };
-    const poly = visibilityPolygon(origin, CONFIG.vision.radius, FOG_RAYS);
+    const poly = visibilityPolygon(origin, visionRadius(me), FOG_RAYS); // Detectives and spies see a bit further (D53)
     const FAR = 5000;
     g.fillStyle(COLORS.background, 0.72);
     for (let i = 0; i < poly.length; i++) {

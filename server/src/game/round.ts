@@ -23,6 +23,7 @@ import {
   assignRoles,
   assignTeams,
   canSee,
+  visionRadius,
   dist,
   inGoal,
   isActionAllowed,
@@ -206,7 +207,7 @@ export class Round {
           w.realTeam === me.team && // a genuine member of the team the spy sits in
           w.id !== me.id &&
           !w.frozen &&
-          canSee(w, me),
+          canSee(w, me, visionRadius(w)),
       );
       if (witness && !me.exposed) {
         me.exposed = true;

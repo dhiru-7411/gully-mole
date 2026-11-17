@@ -77,4 +77,5 @@ Rulings on GDD rules that were unclear or conflicting. The GDD stays the source 
 | D50 | Iced hand | Sent only to players within 160 of the spy. It melts instantly within reach of a fireplace. |
 | D51 | What blocks sight | Buildings, carts, chai stalls and trees. Fireplaces are low and don't. |
 | D52 | Easy bots (dev) | A lobby switch, on by default: bots never grab or snatch the potli, so one person can test roles without bots ending the round in seconds. |
+| D53 | Closer camera, tighter vision (owner) | Camera view height goes from 650 to **520** (zoomed in about 25%). Vision radius goes from 300 to **230** for Normal players and Leaders, and **280** for Detectives and spies, who hunt and sneak. The iced hand shows within 140. This replaces the numbers in D22–D23. Everything is tunable in `shared/src/config.ts`. |
 | D30 | Joystick | A floating joystick on the left 60% of the screen, analog (push further = faster), with a small deadzone. The right side is kept free for action buttons. |

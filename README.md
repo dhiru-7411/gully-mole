@@ -107,7 +107,7 @@ npm run typecheck # TypeScript checks for all three packages
 2. The **server** runs `stepPlayer()` (in `shared/src/movement.ts`) once per input and decides where you really are. Walls are checked there, so nobody can cheat through them.
 3. To feel instant, **your own blob is predicted**: the browser runs the same `stepPlayer()` right away. When the server's answer arrives, any small difference is corrected quietly.
 4. **Other players are interpolated**: drawn smoothly between the positions the server sends, so they glide instead of jumping.
-5. The **camera** follows you, zoomed so every screen shows 650 map units of height (bigger screens show bigger blobs, not more map).
+5. The **camera** follows you, zoomed so every screen shows 520 map units of height (bigger screens show bigger blobs, not more map).
 
 ## Project layout
 

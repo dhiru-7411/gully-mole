@@ -10,7 +10,7 @@
  */
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { boot, type ColyseusTestServer } from "@colyseus/testing";
-import { CONFIG, ClientMsg, Phase, ROOM_NAME, canSee, dist } from "@gully/shared";
+import { CONFIG, ClientMsg, Phase, ROOM_NAME, canSee, dist, visionRadius } from "@gully/shared";
 import appConfig from "../src/app.config";
 
 let colyseus: ColyseusTestServer<any>;
@@ -52,9 +52,9 @@ describe("what each client receives", () => {
           // 1. Only players I can (nearly) see, or my own frozen Leader.
           const visible =
             isMe ||
-            canSee(me, truth, CONFIG.vision.radius + MOVE_SLACK) ||
+            canSee(me, truth, visionRadius(me) + MOVE_SLACK) ||
             (truth.role === "leader" && truth.team === me.team) ||
-            dist(me, truth) <= CONFIG.vision.radius + MOVE_SLACK;
+            dist(me, truth) <= visionRadius(me) + MOVE_SLACK;
           expect(visible, `${me.nickname} received hidden ${truth.nickname}`).toBe(true);
 
           // 2. Secrets only when allowed.
