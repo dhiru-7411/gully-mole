@@ -4,7 +4,17 @@
  */
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { boot, type ColyseusTestServer } from "@colyseus/testing";
-import { ClientMsg, Phase, ROOM_NAME, ServerMsg, isValidRoomCode } from "@gully/shared";
+import {
+  CONFIG,
+  ClientMsg,
+  MAP,
+  Phase,
+  ROOM_NAME,
+  ServerMsg,
+  isBlocked,
+  isValidRoomCode,
+  type MoveInput,
+} from "@gully/shared";
 import appConfig from "../src/app.config";
 
 let colyseus: ColyseusTestServer<any>;
@@ -118,5 +128,92 @@ describe("GullyRoom lobby", () => {
     const p = room.state.players.get(friend.sessionId);
     expect(p).toBeDefined();
     expect(p!.connected).toBe(false);
+  });
+});
+
+// ------------------------------------------------------------------ M1
+
+/** Host + friend + bots up to 8, round started. */
+async function startedRoom() {
+  const { room, host } = await createWithHost();
+  const friend = await colyseus.connectTo(room, { nickname: "Friend" });
+  host.send(ClientMsg.AddBots, {});
+  await room.waitForNextMessage();
+  host.send(ClientMsg.Start);
+  await room.waitForNextMessage();
+  return { room, host, friend };
+}
+
+describe("GullyRoom movement (M1)", () => {
+  it("splits players into Blue and Green and spawns them in their own den", async () => {
+    const { room } = await startedRoom();
+    const players = [...room.state.players.values()];
+    expect(players.filter((p) => p.team === "blue")).toHaveLength(4);
+    expect(players.filter((p) => p.team === "green")).toHaveLength(4);
+    for (const p of players) {
+      const den = MAP.dens[p.team as "blue" | "green"];
+      expect(p.x).toBeGreaterThan(den.x);
+      expect(p.x).toBeLessThan(den.x + den.w);
+      expect(p.y).toBeGreaterThan(den.y);
+      expect(p.y).toBeLessThan(den.y + den.h);
+    }
+    // Nobody shares a spawn spot.
+    expect(new Set(players.map((p) => `${p.x},${p.y}`)).size).toBe(8);
+  });
+
+  it("moves a player one step per input they send", async () => {
+    const { room, host } = await startedRoom();
+    const me = room.state.players.get(host.sessionId)!;
+    const startX = me.x;
+    const dir = me.team === "blue" ? 127 : -127; // walk out of the den, towards the middle
+
+    const input = host.input<MoveInput>({ mode: "reliable" });
+    input.data.moveX = dir;
+    input.data.moveY = 0;
+    input.send();
+    await room.waitForNextMessage();
+    await room.waitForNextTimestep();
+
+    const oneStep = CONFIG.movement.playerSpeed / CONFIG.movement.tickRate;
+    expect(Math.abs(me.x - startX)).toBeCloseTo(oneStep, 3);
+  });
+
+  it("clamps a hacked input (can't move faster than full stick)", async () => {
+    const { room, host } = await startedRoom();
+    const me = room.state.players.get(host.sessionId)!;
+    const startX = me.x;
+    const dir = me.team === "blue" ? 1 : -1;
+
+    const input = host.input<MoveInput>({ mode: "reliable" });
+    input.data.moveX = (dir * 10_000) as any;
+    input.data.moveY = 0;
+    input.send();
+    await room.waitForNextMessage();
+    await room.waitForNextTimestep();
+
+    const oneStep = CONFIG.movement.playerSpeed / CONFIG.movement.tickRate;
+    expect(Math.abs(me.x - startX)).toBeLessThanOrEqual(oneStep + 1e-6);
+  });
+
+  it("bots wander around and never end up inside walls", async () => {
+    const { room } = await startedRoom();
+    const bots = [...room.state.players.values()].filter((p) => p.isBot);
+    const start = bots.map((b) => ({ x: b.x, y: b.y }));
+    for (let i = 0; i < 40; i++) await room.waitForNextTimestep(); // ~2 s of game time
+
+    const moved = bots.filter((b, i) => Math.hypot(b.x - start[i].x, b.y - start[i].y) > 5);
+    expect(moved.length).toBeGreaterThan(0);
+    for (const b of bots) expect(isBlocked(b.x, b.y, CONFIG.movement.playerRadius - 0.01)).toBe(false);
+  });
+
+  it("ignores movement in the lobby", async () => {
+    const { room, host } = await createWithHost();
+    const me = room.state.players.get(host.sessionId)!;
+    const input = host.input<MoveInput>({ mode: "reliable" });
+    input.data.moveX = 127;
+    input.send();
+    await room.waitForNextMessage();
+    await room.waitForNextTimestep();
+    expect(me.x).toBe(0);
   });
 });

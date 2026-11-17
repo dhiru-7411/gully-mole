@@ -2,35 +2,52 @@
  * One Gully Mole room = one group of friends. Its roomId IS the 4-digit code,
  * so joining is just `client.joinById(code)`.
  *
- * M0 covers the lobby: join, nicknames, host, dev bots, start.
- * All decisions happen here on the server; clients only send requests.
+ * M0: lobby (join, nicknames, host, dev bots, start).
+ * M1: teams, spawns, and server-authoritative movement at a fixed tick rate.
+ * All decisions happen here on the server; clients only send inputs.
  */
-import { Room, ServerError, type Client } from "colyseus";
+import { Room, ServerError, type Client, type StepContext } from "colyseus";
 import {
   BOT_NAMES,
   CONFIG,
   ClientMsg,
   GameState,
+  MoveInput,
   Phase,
   PlayerState,
   ServerMsg,
+  assignTeams,
   canStart,
   cleanNickname,
   generateRoomCode,
   pickNextHost,
+  spawnPoint,
+  stepPlayer,
   type AddBotsPayload,
   type JoinOptions,
+  type Team,
 } from "@gully/shared";
+import { BotBrain } from "../bots";
 
 /** Codes in use on this server process (one process on Render's free tier). */
 const codesInUse = new Set<string>();
 
-export class GullyRoom extends Room<{ state: GameState }> {
+export class GullyRoom extends Room<{ state: GameState; input: MoveInput }> {
   // Humans only: bots have no connection, so we cap the total ourselves.
   maxClients = CONFIG.lobby.maxPlayers;
   state = new GameState();
 
+  /**
+   * Each client's queued joystick inputs. `sanitize` clamps every value as it
+   * arrives, so a modified client can't send "move 100× faster".
+   */
+  inputs = this.defineInput(MoveInput, {
+    bufferMaxSize: 64,
+    sanitize: { moveX: [-127, 127], moveY: [-127, 127] },
+  });
+
   private botCounter = 0;
+  private brains = new Map<string, BotBrain>();
 
   messages = {
     [ClientMsg.Start]: (client: Client) => this.handleStart(client),
@@ -44,7 +61,31 @@ export class GullyRoom extends Room<{ state: GameState }> {
     this.state.code = this.roomId;
     this.state.botsAllowed =
       process.env.NODE_ENV !== "production" || process.env.ALLOW_BOTS === "true";
+
+    // The heartbeat: run the simulation tickRate times per second.
+    this.setFixedTimestep((ctx) => this.step(ctx), CONFIG.movement.tickRate);
     console.log(`[room ${this.roomId}] created`);
+  }
+
+  /**
+   * One simulation step. Humans move once per input they sent (the same step
+   * their own browser predicted). Bots ask their brain for an input each tick.
+   */
+  private step(ctx: StepContext) {
+    const playing = this.state.phase === Phase.Playing;
+
+    for (const [id, player] of this.state.players) {
+      if (player.isBot) {
+        if (playing) stepPlayer(player, this.brains.get(id)!.next(player), ctx.dt);
+        continue;
+      }
+      const channel = this.inputs.get(id);
+      if (!channel) continue;
+      // Iterating drains the queue. In the lobby we just throw inputs away.
+      for (const input of channel) {
+        if (playing && player.connected) stepPlayer(player, input, ctx.dt);
+      }
+    }
   }
 
   /** Runs before onJoin. Throwing here rejects the join with a message the client can show. */
@@ -119,6 +160,7 @@ export class GullyRoom extends Room<{ state: GameState }> {
     const check = canStart(this.state.players.size);
     if (!check.ok) return this.notice(client, check.reason);
 
+    this.setUpRound();
     this.state.phase = Phase.Playing;
     this.lock(); // no new joins mid-round
     console.log(`[room ${this.roomId}] round started with ${this.state.players.size} players`);
@@ -144,10 +186,29 @@ export class GullyRoom extends Room<{ state: GameState }> {
   private handleRemoveBot(client: Client, botId: unknown) {
     if (!this.isHost(client) || this.state.phase !== Phase.Lobby) return;
     if (typeof botId !== "string") return;
-    if (this.state.players.get(botId)?.isBot) this.state.players.delete(botId);
+    if (this.state.players.get(botId)?.isBot) {
+      this.state.players.delete(botId);
+      this.brains.delete(botId);
+    }
   }
 
   // ----------------------------------------------------------------- helpers
+
+  /** Random teams (DECISIONS D4), everyone placed on a spawn spot in their own den. */
+  private setUpRound() {
+    const teams = assignTeams([...this.state.players.keys()]);
+    const nextSpot: Record<Team, number> = { blue: 0, green: 0 };
+    for (const [id, player] of this.state.players) {
+      const team = teams.get(id)!;
+      const spot = spawnPoint(team, nextSpot[team]++);
+      player.team = team;
+      player.x = spot.x;
+      player.y = spot.y;
+      // Face the middle of the map.
+      player.fx = team === "blue" ? 127 : -127;
+      player.fy = 0;
+    }
+  }
 
   private addBot() {
     const id = `bot-${++this.botCounter}`;
@@ -155,6 +216,7 @@ export class GullyRoom extends Room<{ state: GameState }> {
     const name = BOT_NAMES.find((n) => !used.has(n.toLowerCase())) ?? "Bot";
     const nickname = cleanNickname(name, this.nicknames())!;
     this.state.players.set(id, new PlayerState({ id, nickname, isBot: true, connected: true }));
+    this.brains.set(id, new BotBrain());
   }
 
   private passHostIfNeeded(leavingId: string) {

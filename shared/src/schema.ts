@@ -19,10 +19,32 @@ export const PlayerState = schema(
     nickname: t.string(),
     isBot: t.boolean().default(false),
     connected: t.boolean().default(true),
+    /** "blue" | "green" once a round starts; "" in the lobby. */
+    team: t.string().default(""),
+    /** Position in world units (map is 2400 × 1350). */
+    x: t.number().default(0),
+    y: t.number().default(0),
+    /** Facing direction for the eyes, -127..127 each. */
+    fx: t.int8().default(127),
+    fy: t.int8().default(0),
   },
   "PlayerState",
 );
 export type PlayerState = SchemaType<typeof PlayerState>;
+
+/**
+ * One input frame from a client: joystick/keyboard axes, -127..127 each.
+ * The server clamps them (never trust the wire) and runs one movement step per
+ * input, exactly like the client's prediction does.
+ */
+export const MoveInput = schema(
+  {
+    moveX: t.int8(),
+    moveY: t.int8(),
+  },
+  "MoveInput",
+);
+export type MoveInput = SchemaType<typeof MoveInput>;
 
 export const GameState = schema(
   {

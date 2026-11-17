@@ -109,7 +109,78 @@ input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
 .player-list .tag.host { color: var(--accent); }
 .player-list .remove { background: none; border: none; color: var(--muted); font-size: 18px; cursor: pointer; padding: 0 4px; }
 
-#game { position: fixed; inset: 0; }
+/* Game screen: no page scrolling/zooming while you drag the joystick. */
+#game { position: fixed; inset: 0; touch-action: none; user-select: none; -webkit-user-select: none; }
+#game canvas { display: block; }
+
+.hud {
+  position: absolute;
+  top: max(10px, env(safe-area-inset-top));
+  left: max(12px, env(safe-area-inset-left));
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  z-index: 5;
+  pointer-events: none;
+}
+.team-badge {
+  background: rgba(12, 13, 17, 0.75);
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 14px;
+  font-weight: 600;
+}
+.team-badge .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; }
+.hud-hint {
+  background: rgba(12, 13, 17, 0.6);
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 13px;
+  color: var(--muted);
+  transition: opacity 0.6s;
+}
+.hud-hint.faded { opacity: 0; }
+
+/* Floating joystick: appears under your thumb. */
+.joystick {
+  position: absolute;
+  width: 112px;
+  height: 112px;
+  margin: -56px 0 0 -56px;
+  border-radius: 50%;
+  background: rgba(241, 242, 246, 0.12);
+  border: 2px solid rgba(241, 242, 246, 0.35);
+  z-index: 6;
+  pointer-events: none;
+}
+.joystick-knob {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 48px;
+  height: 48px;
+  margin: -24px 0 0 -24px;
+  border-radius: 50%;
+  background: rgba(241, 242, 246, 0.6);
+}
+
+.rotate-hint {
+  display: none;
+  position: absolute;
+  left: 50%;
+  bottom: max(20px, env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  background: rgba(12, 13, 17, 0.8);
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-size: 14px;
+  z-index: 5;
+  pointer-events: none;
+  white-space: nowrap;
+}
+@media (orientation: portrait) and (pointer: coarse) {
+  .rotate-hint { display: block; }
+}
 
 .toast {
   position: fixed;
