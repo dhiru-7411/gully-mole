@@ -90,7 +90,8 @@ function attach(r: GameRoom) {
   room = r;
   // Dev only: lets you poke at the room from the browser console (window.__gully.room.state).
   if (import.meta.env.DEV) (window as any).__gully = { room: r };
-  history.replaceState(null, "", `?code=${r.roomId}`);
+  const keep = new URLSearchParams(location.search).has("overview") ? "&overview" : "";
+  history.replaceState(null, "", `?code=${r.roomId}${keep}`);
 
   r.onStateChange(() => render());
   r.onMessage(ServerMsg.Notice, (text: string) => toast(text));

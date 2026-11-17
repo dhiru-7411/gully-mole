@@ -48,6 +48,7 @@ Phones work best held sideways (landscape). The right side of the screen is kept
 - **Several tabs:** each browser tab is a separate player. Open the invite link in new tabs.
 - **Dev bots:** as host, press **Fill with bots** to reach 8 players, or **+1 bot**. In a round, bots wander the map. Bots are on by default in development and off when `NODE_ENV=production` (set `ALLOW_BOTS=true` to force them on).
 - **Debug:** in development, the browser console has `window.__gully.room.state` (live room state).
+- **See the whole map:** in development, open http://localhost:5173/?overview to zoom out to the full map. It's for testing only; real players always get the follow camera.
 
 ### Testing on your phone
 

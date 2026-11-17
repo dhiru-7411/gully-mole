@@ -24,13 +24,13 @@ export function drawMap(scene: Phaser.Scene) {
     g.fillStyle(TEAM_COLORS[team].body, 0.22).fillRoundedRect(d.x, d.y, d.w, d.h, 22);
     g.lineStyle(5, TEAM_COLORS[team].body).strokeRoundedRect(d.x, d.y, d.w, d.h, 22);
     scene.add
-      .text(d.x + d.w / 2, d.y + 26, `${CONFIG.teams.names[team]} den`, {
+      .text(d.x + d.w / 2, d.y - 12, `${CONFIG.teams.names[team]} den`, {
         fontFamily: "system-ui, sans-serif",
         fontSize: "26px",
         fontStyle: "bold",
         color: "#f1f2f6",
       })
-      .setOrigin(0.5, 0)
+      .setOrigin(0.5, 1) // sits just above the den, so spawning blobs don't cover it
       .setAlpha(0.85);
   }
 

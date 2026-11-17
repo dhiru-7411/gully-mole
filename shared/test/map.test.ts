@@ -6,7 +6,7 @@ const R = CONFIG.movement.playerRadius;
 describe("map data", () => {
   it("matches docs/ART.md counts", () => {
     const count = (k: string) => [...MAP.rects, ...MAP.circles].filter((o) => o.kind === k).length;
-    expect(count("building")).toBe(24);
+    expect(count("building")).toBe(30);
     expect(count("cart")).toBe(8);
     expect(count("chai")).toBe(4);
     expect(count("tree")).toBe(12);
@@ -73,6 +73,29 @@ describe("map data", () => {
       }
     }
     expect(tight).toEqual([]);
+  });
+
+  it("dens sit on the end lines like goals", () => {
+    expect(MAP.dens.blue.x).toBe(0);
+    expect(MAP.dens.green.x + MAP.dens.green.w).toBe(MAP.width);
+  });
+
+  it("there's no straight run from the potli to either den (D31)", () => {
+    // Sweep a blob along the straight line from the potli to each den's mouth,
+    // and also along every row through the den mouth. Something must be in the way.
+    for (const team of ["blue", "green"] as const) {
+      const den = MAP.dens[team];
+      const mouthX = team === "blue" ? den.x + den.w + R : den.x - R;
+      for (let y = den.y + R; y <= den.y + den.h - R; y += 10) {
+        let blocked = false;
+        for (let t = 0; t <= 1 && !blocked; t += 0.005) {
+          const x = MAP.middleZone.x + (mouthX - MAP.middleZone.x) * t;
+          const yy = MAP.middleZone.y + (y - MAP.middleZone.y) * t;
+          blocked = isBlocked(x, yy, R);
+        }
+        expect(blocked, `${team} den, row y=${y}`).toBe(true);
+      }
+    }
   });
 
   it("nothing blocks the potli's starting spot", () => {

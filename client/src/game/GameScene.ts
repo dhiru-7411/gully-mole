@@ -63,7 +63,9 @@ export class GameScene extends Phaser.Scene {
 
     this.syncBlobs();
     const myBlob = this.blobs.get(this.room.sessionId);
-    if (myBlob) {
+    if (this.overview) {
+      cam.centerOn(MAP.width / 2, MAP.height / 2);
+    } else if (myBlob) {
       cam.startFollow(myBlob, false, CONFIG.camera.followLerp, CONFIG.camera.followLerp);
       cam.centerOn(myBlob.x, myBlob.y);
     }
@@ -100,8 +102,13 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
+  /** Dev only: add ?overview to the URL to see the whole map at once. */
+  private overview = import.meta.env.DEV && new URLSearchParams(location.search).has("overview");
+
   private applyZoom() {
-    const zoom = this.scale.height / CONFIG.camera.viewHeight;
+    const zoom = this.overview
+      ? Math.min(this.scale.width / MAP.width, this.scale.height / MAP.height)
+      : this.scale.height / CONFIG.camera.viewHeight;
     this.cameras.main.setZoom(zoom);
     for (const blob of this.blobs.values()) blob.setLabelZoom(zoom);
   }

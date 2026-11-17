@@ -48,10 +48,15 @@ const blueRects: RectObstacle[] = [
   { kind: "building", x: 840, y: 1090, w: 160, h: 200 },
   { kind: "building", x: 100, y: 120, w: 150, h: 110 },
   { kind: "building", x: 100, y: 1120, w: 150, h: 110 },
+  // The run home is a zig-zag, not a straight lane (owner request, D31):
+  // three staggered blockers between the middle and the den, openings alternating.
+  { kind: "building", x: 960, y: 600, w: 50, h: 150 }, // 1st: block the centre, go round top or bottom
+  { kind: "building", x: 640, y: 640, w: 120, h: 130 }, // 2nd: juts up from the lower block, squeezes the lane
+  { kind: "building", x: 250, y: 560, w: 60, h: 230 }, // 3rd: "goalkeeper" wall in front of the den
   // carts (thelas)
   { kind: "cart", x: 560, y: 300, w: 70, h: 36 },
   { kind: "cart", x: 240, y: 950, w: 70, h: 36 },
-  { kind: "cart", x: 960, y: 590, w: 70, h: 36 },
+  { kind: "cart", x: 410, y: 657, w: 70, h: 36 },
   { kind: "cart", x: 690, y: 1000, w: 70, h: 36 },
   // chai stalls
   { kind: "chai", x: 680, y: 1180, w: 100, h: 56 },
@@ -70,11 +75,12 @@ const blueCircles: CircleObstacle[] = [
   { kind: "fireplace", x: 720, y: 230, r: 40 },
 ];
 
-const blueDen: Rect = { x: 60, y: 545, w: 240, h: 260 };
+/** Like a goal: flat against the end line, centred, nothing behind it. */
+const blueDen: Rect = { x: 0, y: 535, w: 170, h: 280 };
 
 /** Spawn spots inside the den: 3 columns × 4 rows = 12 (max team is 10). */
 const blueSpawns: Point[] = [];
-for (const y of [590, 650, 710, 770]) for (const x of [110, 180, 250]) blueSpawns.push({ x, y });
+for (const y of [575, 635, 695, 755]) for (const x of [40, 85, 130]) blueSpawns.push({ x, y });
 
 // ---------------------------------------------------------------- the full map
 

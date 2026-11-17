@@ -29,9 +29,10 @@ A gold **potli** (pouch) `#FFD43B`.
 ## Map: "Gully No. 7"
 
 - World **2400 × 1350** units, split down the middle (Blue half left, Green half right).
-- **Blue den** on the left `(60, 545, 240×260)`, **Green den** on the right `(2100, 545, 240×260)`.
+- **Blue den** flat against the left end line `(0, 535, 170×280)`, **Green den** against the right one `(2230, 535, 170×280)`. They sit like goals, with nothing behind them.
+- The run home from the potli zig-zags through staggered walls, ending with a "goalkeeper" wall in front of each den (D31). In-game overview: `docs/design/images/map-actual.jpg`.
 - Middle zone: a circle at the center `(1200, 675)`, radius 150. The potli starts there.
-- 24 buildings, 8 carts (thelas), 4 chai stalls, 12 trees, 2 fireplaces (angithi).
+- 30 buildings, 8 carts (thelas), 4 chai stalls, 12 trees, 2 fireplaces (angithi).
 - Each half is the other turned 180° around the center: point `(x, y)` mirrors to `(2400 − x, 1350 − y)`.
 - **The source of truth is now `shared/src/map.ts`.** The server uses it for collisions (and later line of sight), and the client draws from it. In M1, 4 trees moved slightly from the design preview so every gap is at least one blob wide (DECISIONS D28).
 
