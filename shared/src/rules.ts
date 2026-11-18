@@ -19,6 +19,8 @@ export interface RulePlayer {
   y: number;
   frozen: boolean;
   protected: boolean;
+  /** Seconds until this player may Tag again (D63). */
+  tagCooldown?: number;
   /** "ice" | "shame" | "out" | "" (missing = "ice" when frozen). */
   freeze?: string;
   /** Secret, when known: "detective" | "spy" | "". */
@@ -75,6 +77,7 @@ export function canTag(me: RulePlayer, target: RulePlayer): boolean {
   const myOwnSpy = target.secretRole === "spy" && realTeamOf(target) === realTeamOf(me);
   return (
     !me.frozen &&
+    !(me.tagCooldown && me.tagCooldown > 0) && // D63: 10 s between your tags
     !target.frozen &&
     !target.protected &&
     !myOwnSpy &&

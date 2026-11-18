@@ -168,6 +168,45 @@ describe("secret unfreeze and the silent pass", () => {
   });
 });
 
+describe("tag cooldown (D63)", () => {
+  it("after a tag you must wait 10 s to tag again; other actions and the spy's Ice aren't affected", () => {
+    const { round, P, place, ticks, scatter } = setup();
+    scatter();
+    place("b3", BLUE_SIDE);
+    place("g3", BLUE_SIDE, 40);
+    place("g0", BLUE_SIDE, -40);
+    expect(round.act("b3", { kind: "tag", targetId: "g3" })).toBe(true);
+    expect(P("b3").tagCooldown).toBe(CONFIG.timers.tagCooldownSec);
+    expect(round.act("b3", { kind: "tag", targetId: "g0" })).toBe(false); // too soon
+
+    // Other actions still work during the cooldown (the Leader's lamp here).
+    place("b0", BLUE_SIDE, 0);
+    P("b1").frozen = true;
+    P("b1").freeze = "ice";
+    place("b1", BLUE_SIDE, 30);
+    expect(round.act("b0", { kind: "unfreeze", targetId: "b1" })).toBe(true);
+
+    ticks(CONFIG.timers.tagCooldownSec - 1);
+    expect(P("b3").tagCooldown).toBe(1);
+    expect(round.act("b3", { kind: "tag", targetId: "g0" })).toBe(false);
+    ticks(1.1);
+    expect(P("b3").tagCooldown).toBe(0);
+    expect(round.act("b3", { kind: "tag", targetId: "g0" })).toBe(true);
+  });
+
+  it("the spy's Ice has no tag cooldown (it has its own 20 s iced hand)", () => {
+    const { round, P, place, scatter } = setup();
+    scatter();
+    // b2 (Green's spy in Blue) tags a Green intruder for cover, then can still Ice right away.
+    place("b2", BLUE_SIDE);
+    place("g3", BLUE_SIDE, 40);
+    place("b3", BLUE_SIDE, -40);
+    P("b3").x = BLUE_SIDE.x - 40;
+    expect(round.act("b2", { kind: "tag", targetId: "g3" })).toBe(true);
+    expect(round.roleAct("b2", { kind: "ice", targetId: "b3" })).toBe(true);
+  });
+});
+
 describe("your own planted spy (D54)", () => {
   it("the team that planted a spy can't tag them, even on its own half", () => {
     const { round, P, place, scatter } = setup();

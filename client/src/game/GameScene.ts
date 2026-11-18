@@ -355,6 +355,7 @@ const plain = (p: PlayerState): RulePlayer => ({
   y: p.y,
   frozen: p.frozen,
   protected: p.protected,
+  tagCooldown: p.tagCooldown,
   freeze: p.freeze,
   secretRole: p.secretRole ?? "",
   realTeam: p.realTeam ?? "",

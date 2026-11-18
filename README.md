@@ -54,7 +54,7 @@ The big button's label changes to what you can do right now (D32). If two things
 | Label | When |
 | --- | --- |
 | **Unfreeze** | You're the Leader, beside a frozen teammate |
-| **Tag** | An enemy standing on **your** half is within reach: freezes them |
+| **Tag** | An enemy standing on **your** half is within reach: freezes them. Then a **10 s cooldown** before your next tag (the button shows "Tag 7…") |
 | **Snatch** | Beside an enemy carrying the potli: a 3 s countdown starts, and stay beside them to take it |
 | **Grab** | Standing on the loose potli |
 

@@ -354,6 +354,7 @@ export class GullyRoom extends Room<{ state: GameState; input: MoveInput }> {
         freeze: Freeze.None,
         thawIn: 0,
         protected: false,
+        tagCooldown: 0,
         exposed: false,
         draggedBy: "",
         rescueUsed: false,

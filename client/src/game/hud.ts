@@ -190,7 +190,9 @@ export class Hud {
 
     // Buttons.
     this.current = view.action;
-    this.actionBtn.textContent = view.action ? LABELS[view.action.kind] : "·";
+    // D63: while your tag cooldown runs and nothing else is possible, show "Tag 7".
+    const cooling = !view.action && me.tagCooldown > 0 && !me.frozen;
+    this.actionBtn.textContent = view.action ? LABELS[view.action.kind] : cooling ? `Tag ${me.tagCooldown}` : "·";
     this.actionBtn.disabled = !view.action;
     this.actionBtn.dataset.kind = view.action?.kind ?? "";
     this.currentRole = view.roleAction;

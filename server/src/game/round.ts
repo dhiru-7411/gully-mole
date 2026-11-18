@@ -57,6 +57,8 @@ export class Round {
   private thawTimers = new Map<string, number>();
   /** Seconds of post-thaw protection left. */
   private protectTimers = new Map<string, number>();
+  /** Player id -> seconds until they may Tag again (D63). */
+  private tagTimers = new Map<string, number>();
   /** Spy id -> seconds until their iced hand thaws by itself. */
   private handTimers = new Map<string, number>();
   /** Spy id -> footprint trail state after a secret freeze. */
@@ -94,6 +96,7 @@ export class Round {
         fx: team === "blue" ? 127 : -127,
         fy: 0,
         frozen: false,
+        tagCooldown: 0,
         freeze: Freeze.None,
         thawIn: 0,
         protected: false,
@@ -124,7 +127,7 @@ export class Round {
     s.timeLeft = roundDurationSeconds(s.players.size);
     s.winner = "";
     s.endReason = "";
-    for (const m of [this.thawTimers, this.protectTimers, this.handTimers, this.trails, this.printTimers, this.wrongArrests]) {
+    for (const m of [this.thawTimers, this.protectTimers, this.handTimers, this.trails, this.printTimers, this.wrongArrests, this.tagTimers]) {
       m.clear();
     }
     this.secondAcc = 0;
@@ -149,6 +152,9 @@ export class Round {
     const target = s.players.get(action.targetId);
     switch (action.kind) {
       case "tag":
+        // D63: you can't tag again for 10 s.
+        this.tagTimers.set(me.id, CONFIG.timers.tagCooldownSec);
+        me.tagCooldown = CONFIG.timers.tagCooldownSec;
         this.stats.p(me.id).freezes++;
         if (target!.realTeam !== me.realTeam) this.stats.add(me.realTeam, "enemiesFrozen");
         this.stats.add(target!.realTeam, "ownPlayersFrozen");
@@ -297,6 +303,18 @@ export class Round {
       } else {
         this.thawTimers.set(id, now);
         p.thawIn = Math.ceil(now);
+      }
+    }
+    // Tag cooldowns (D63).
+    for (const [id, left] of this.tagTimers) {
+      const p = s.players.get(id);
+      const now = left - dt;
+      if (!p || now <= 0) {
+        if (p) p.tagCooldown = 0;
+        this.tagTimers.delete(id);
+      } else {
+        this.tagTimers.set(id, now);
+        p.tagCooldown = Math.ceil(now);
       }
     }
     for (const [id, left] of this.protectTimers) {

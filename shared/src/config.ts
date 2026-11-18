@@ -104,6 +104,8 @@ export const CONFIG = {
   timers: {
     /** Enemy must stay within snatch reach this long to take the potli. */
     snatchCountdownSec: 3,
+    /** After you Tag someone, you can't Tag again for this long (D63, owner). The spy's Ice isn't affected. */
+    tagCooldownSec: 10,
     frozenHandSec: 20,
     footprintsSec: 20,
     leaderAutoThawSec: 10,

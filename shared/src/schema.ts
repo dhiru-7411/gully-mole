@@ -73,6 +73,8 @@ export const PlayerState = schema(
     thawIn: t.uint8().default(0),
     /** Just-thawed Leader can't be frozen again for a moment. */
     protected: t.boolean().default(false),
+    /** Whole seconds until this player may Tag again (D63: 10 s after each tag). */
+    tagCooldown: t.uint8().default(0),
     /** A spy who was seen passing to the enemy: everyone sees "SPY". */
     exposed: t.boolean().default(false),
     /** Shame-frozen Detective: id of the teammate dragging them, or "". */
