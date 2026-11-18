@@ -6,5 +6,6 @@ export * from "./teams";
 export * from "./rules";
 export * from "./vision";
 export * from "./roles";
+export * from "./awards";
 export * from "./schema";
 export * from "./messages";

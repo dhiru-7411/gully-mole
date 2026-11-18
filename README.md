@@ -15,8 +15,8 @@ A 2D top-down, real-time multiplayer party game for the browser. Two teams, Blue
 | M2 Capture the object: potli, tag/freeze, Leader's lamp, snatch, pass, timer, winning, smarter bots | ✅ done |
 | M3 Roles and secrets: Detective, spies, limited vision, per-player views, arrests, rescues | ✅ done |
 | M4 Communication: Leader huddles (pause + team chat), one-tap quick messages | ✅ done |
-| M5 End of round (stats, reveal, awards) | next |
-| M6 Deploy | not started |
+| M5 End of round: stats for every factor, timeout winner, reveal, peer awards, honesty bonus, MVP | ✅ done |
+| M6 Deploy (Netlify + Render, step-by-step guide) | next |
 
 ## Requirements
 
@@ -54,7 +54,7 @@ The big button's label changes to what you can do right now (D32). If two things
 | Label | When |
 | --- | --- |
 | **Unfreeze** | You're the Leader, beside a frozen teammate |
-| **Tag** | An enemy standing on **your** half is within reach: freezes them |
+| **Tag** | An enemy standing on **your** half is within reach: freezes them. Then a **10 s cooldown** before your next tag (the button shows "Tag 7…") |
 | **Snatch** | Beside an enemy carrying the potli: a 3 s countdown starts, and stay beside them to take it |
 | **Grab** | Standing on the loose potli |
 
@@ -65,8 +65,16 @@ The big button's label changes to what you can do right now (D32). If two things
 - You can only tag enemies who stand on **your** half. Frozen players drop the potli and can't move.
 - Only your **Leader** can unfreeze you. A frozen Leader thaws by themselves after 10 s and is protected for a moment. Teammates see an arrow to a frozen Leader, and the Leader always sees an arrow to the potli.
 - Carrying slows you down (D38). A Leader carrying it is faster, unless a teammate is frozen.
-- **Win by:** scoring, or freezing the whole other team at once (wipe-out). Running out of time is a draw for now (M5 adds stats).
+- **Win by:** scoring, or freezing the whole other team at once (wipe-out). If time runs out, the better automatic stats score wins (M5).
 - After a round, the host presses **Back to lobby** to play again.
+
+### After the round (M5)
+
+1. **The reveal:** who won and why, both teams' **stats scores** (every factor from the GDD table, expandable), who the spies and Detectives were, and the key moments.
+2. **Peer awards:** everyone hands out **3–5 awards to opponents**: Ate and Left No Crumbs, Lowkey Carried, NPC Energy, Ice Cold Rizz, Sus Since Minute One, plus the optional ones (Delulu Detective, Fumbled the Bag, Main Character Syndrome, Professional Yapper, Caught in 4K). Situational awards only appear if that moment happened. The host can switch optional awards off in the lobby.
+3. **Results:** every award is a point (roasts too). Picks that match the stats earn an **honesty bonus**. The most points is the round's **MVP**. Awards never change which team won.
+
+Scoring weights are in `shared/src/config.ts` (`scoring`, all 1 for now); the factor list is in `shared/src/awards.ts`.
 
 ### Talking (M4)
 

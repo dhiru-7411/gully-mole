@@ -21,6 +21,7 @@ import {
 } from "@gully/shared";
 import type { GameRoom } from "../net";
 import { clearHuddleLog } from "./feed";
+import { EndScreen } from "./endScreen";
 
 const LABELS: Record<ActionKind, string> = {
   unfreeze: "Unfreeze",
@@ -61,7 +62,7 @@ export class Hud {
   private end = $("end-overlay");
   private endTitle = $("end-title");
   private endReason = $("end-reason");
-  private endReveal = $("end-reveal");
+
   private backBtn = $<HTMLButtonElement>("btn-back");
   private endWait = $("end-wait");
 
@@ -117,6 +118,7 @@ export class Hud {
     this.whisperBtn.removeEventListener("click", this.toggleWhisper);
     this.whisperInput.removeEventListener("keydown", this.onWhisperKey);
     this.backBtn.removeEventListener("click", this.pressBack);
+    this.endScreen.destroy();
     removeEventListener("keydown", this.onKey);
     this.huddleBtn.removeEventListener("click", this.callHuddle);
     this.endHuddleBtn.removeEventListener("click", this.endHuddle);
@@ -188,7 +190,9 @@ export class Hud {
 
     // Buttons.
     this.current = view.action;
-    this.actionBtn.textContent = view.action ? LABELS[view.action.kind] : "·";
+    // D63: while your tag cooldown runs and nothing else is possible, show "Tag 7".
+    const cooling = !view.action && me.tagCooldown > 0 && !me.frozen;
+    this.actionBtn.textContent = view.action ? LABELS[view.action.kind] : cooling ? `Tag ${me.tagCooldown}` : "·";
     this.actionBtn.disabled = !view.action;
     this.actionBtn.dataset.kind = view.action?.kind ?? "";
     this.currentRole = view.roleAction;
@@ -257,7 +261,7 @@ export class Hud {
     return "";
   }
 
-  private roundRevealShown = false;
+  private endScreen = new EndScreen(this.room);
 
   private updateEnd(s: GameState) {
     const ended = s.phase === Phase.Ended;
@@ -278,20 +282,16 @@ export class Hud {
         ? `Scored in the ${names[loser]} den.`
         : s.endReason === "wipeout"
           ? "Froze the whole other team."
-          : "Time's up. (Stats decide timed-out rounds from M5.)";
+          : "Time's up: the better stats score wins.";
 
-    // The reveal: who were the spies and Detectives (everything is visible now).
-    const players = [...s.players.values()];
-    const spies = players.filter((p) => p.secretRole === "spy");
-    const dets = players.filter((p) => p.secretRole === "detective");
-    if (players.length && (spies.length || dets.length)) {
-      const spyText = spies.map((p) => `${p.nickname} (for ${names[p.realTeam]}, sat in ${names[p.team]})`).join(", ");
-      const detText = dets.map((p) => `${p.nickname} (${names[p.team]})`).join(", ");
-      this.endReveal.textContent = `Spies: ${spyText || "none"}. Detectives: ${detText || "none"}.`;
-      this.roundRevealShown = true;
-    }
+    // The reveal, awards and results (endScreen.ts).
+    const me = s.players.get(this.room.sessionId);
+    if (me) this.endScreen.update(s, me);
+
+    // The host can move on once voting is over (or skip it).
     const isHost = s.hostId === this.room.sessionId;
     this.backBtn.classList.toggle("hidden", !isHost);
+    this.backBtn.textContent = s.summary?.awardsOpen ? "Skip awards, back to lobby" : "Back to lobby";
     this.endWait.classList.toggle("hidden", isHost);
   }
 

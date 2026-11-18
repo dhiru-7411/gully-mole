@@ -240,6 +240,25 @@ describe("winning (score, wipe-out, time)", () => {
   });
 });
 
+describe("spy bots and cover", () => {
+  it("a spy bot never freezes its real teammates when no fake teammate is watching", () => {
+    const { state, P, place } = setup();
+    // b2 becomes Green's spy sitting in Blue; g1 (Green) stands on the Blue half beside it.
+    P("b2").secretRole = "spy";
+    P("b2").realTeam = "green";
+    // Everyone else far away in their dens.
+    let i = 0;
+    for (const [id, p] of state.players) if (id !== "b2" && id !== "g1") place(id, MAP.spawns[p.team as "blue" | "green"][i++ % 12]);
+    place("b2", BLUE_SIDE);
+    place("g1", BLUE_SIDE, 40);
+    const brain = new BotBrain(() => 0.99); // "random" never forces anything
+    for (let t = 0; t < 60; t++) {
+      const d = brain.next(P("b2"), state, CONFIG.movement.tickRate);
+      expect(d.action?.kind === "tag" && d.action.targetId === "g1").toBe(false);
+    }
+  });
+});
+
 describe("bots (simulation)", () => {
   /** Runs a whole bots-only game on the server logic, no network. */
   function simulate(seconds: number, setupFn?: (s: ReturnType<typeof setup>) => void, activeIds?: string[]) {

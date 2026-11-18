@@ -52,6 +52,12 @@ describe("tagging (D1: target must be on the tagger's half)", () => {
     expect(canTag(me, p("g", "green", near(blueSpot, CONFIG.distances.tag + 1)))).toBe(false);
   });
 
+  it("can't tag again during the 10 s cooldown (D63)", () => {
+    const me = p("b", "blue", blueSpot, { tagCooldown: 7 });
+    expect(canTag(me, p("g", "green", near(blueSpot)))).toBe(false);
+    expect(canTag({ ...me, tagCooldown: 0 }, p("g", "green", near(blueSpot)))).toBe(true);
+  });
+
   it("a frozen player can't tag", () => {
     expect(canTag(p("b", "blue", blueSpot, { frozen: true }), p("g", "green", near(blueSpot)))).toBe(false);
   });

@@ -104,6 +104,8 @@ export const CONFIG = {
   timers: {
     /** Enemy must stay within snatch reach this long to take the potli. */
     snatchCountdownSec: 3,
+    /** After you Tag someone, you can't Tag again for this long (D63, owner). The spy's Ice isn't affected. */
+    tagCooldownSec: 10,
     frozenHandSec: 20,
     footprintsSec: 20,
     leaderAutoThawSec: 10,
@@ -124,12 +126,17 @@ export const CONFIG = {
   /** Anti-spam: one quick message per this many seconds per player. */
   quickMessageCooldownSec: 1.5,
 
-  /** (M5+) Placeholder weights: 1 each, tune after play-tests. Negative factors subtract. */
+  /**
+   * Team score weights (GDD "Automatic stats"). Placeholder 1 each: tune after
+   * play-tests. The factor list and whether it adds or subtracts is in
+   * shared/src/awards.ts (FACTORS). Units: hold time counts per 10 s;
+   * "closest to scoring" counts 0–10.
+   */
   scoring: {
     enemiesFrozen: 1,
     objectSnatched: 1,
-    objectHoldSecond: 1,
-    objectClosestToBase: 1,
+    holdTime: 1,
+    closestToGoal: 1,
     handOffs: 1,
     lampUnfreezes: 1,
     spyUntracedFreezes: 1,
@@ -140,6 +147,18 @@ export const CONFIG = {
     wrongArrest: 1,
     ownPlayersFrozen: 1,
     objectLostToEnemy: 1,
+  },
+
+  /** Peer awards after each round (GDD "Peer awards"). */
+  awards: {
+    minPerPlayer: 3,
+    maxPerPlayer: 5,
+    /** Seconds everyone gets to hand out awards before results show anyway. */
+    votingSec: 90,
+    /** Points for each award you receive (roasts too). */
+    pointsPerAward: 1,
+    /** Honesty bonus: points when your pick matches what the stats show. */
+    honestyBonus: 1,
   },
 } as const;
 

@@ -39,6 +39,10 @@ export const ClientMsg = {
   HuddleChat: "huddleChat",
   /** One-tap message to your team. Payload: index into CONFIG.quickMessages. */
   QuickMessage: "quickMessage",
+  /** After a round: your 3–5 awards. Payload: AwardPick[]. */
+  SubmitAwards: "submitAwards",
+  /** Host, lobby: which "settings" awards are on. Payload: string[] of award ids. */
+  SetExtraAwards: "setExtraAwards",
 } as const;
 
 export interface RoleActionPayload {
