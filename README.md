@@ -14,8 +14,9 @@ A 2D top-down, real-time multiplayer party game for the browser. Two teams, Blue
 | M1 Movement: map, blobs, server-authoritative movement, prediction, joystick, wandering bots | ✅ done |
 | M2 Capture the object: potli, tag/freeze, Leader's lamp, snatch, pass, timer, winning, smarter bots | ✅ done |
 | M3 Roles and secrets: Detective, spies, limited vision, per-player views, arrests, rescues | ✅ done |
-| M4 Communication (huddles, quick messages) | next |
-| M5–M6 | not started |
+| M4 Communication: Leader huddles (pause + team chat), one-tap quick messages | ✅ done |
+| M5 End of round (stats, reveal, awards) | next |
+| M6 Deploy | not started |
 
 ## Requirements
 
@@ -45,6 +46,8 @@ Open http://localhost:5173, type a nickname and press **Create room**. Share the
 | Role button | **Q** | Purple-ish round button (only shows when your role can act) |
 | Pass | **E** | Small **Pass** button (only shows when you can pass) |
 | Whisper (spy only) | **Enter** | **Whisper** button |
+| Huddle (Leader only) | **H** | **Huddle (2)** button, top left |
+| Quick messages | **1–4** | Chips on the right edge |
 
 The big button's label changes to what you can do right now (D32). If two things are possible, the more urgent one wins:
 
@@ -64,6 +67,12 @@ The big button's label changes to what you can do right now (D32). If two things
 - Carrying slows you down (D38). A Leader carrying it is faster, unless a teammate is frozen.
 - **Win by:** scoring, or freezing the whole other team at once (wipe-out). Running out of time is a draw for now (M5 adds stats).
 - After a round, the host presses **Back to lobby** to play again.
+
+### Talking (M4)
+
+- **Huddles:** only a Leader can call one (2 per round, not while frozen). The **whole game and the timer pause**, and each team gets its own private chat for 2.5 minutes. The spy sits in their fake team's huddle and hears everything. The Leader who called it can end it early.
+- **Quick messages:** one tap (or keys 1–4) sends "Spy near the fire!", "Leader frozen!", "Potli on the left!" or "Trust me bro" to your team, as a speech bubble and a feed line.
+- **Whisper:** the spy's private line to their real team (M3).
 
 ### Roles and secrets (M3)
 

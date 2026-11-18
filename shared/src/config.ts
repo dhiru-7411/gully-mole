@@ -110,11 +110,19 @@ export const CONFIG = {
     leaderProtectionSec: 2.5,
   },
 
-  /** (M4+) DECISIONS D8: both teams chat at once; caller can end early. */
+  /** Huddles (GDD + D8): Leader-called, game paused, each team chats privately; caller can end early. */
   huddle: {
     perRound: 2,
     durationSec: 150,
+    chatMaxLength: 120,
+    /** Anti-spam: at most this many chat lines per second per player. */
+    chatPerSecond: 2,
   },
+
+  /** One-tap messages to your team (GDD). Keys 1–4. */
+  quickMessages: ["Spy near the fire!", "Leader frozen!", "Potli on the left!", "Trust me bro"],
+  /** Anti-spam: one quick message per this many seconds per player. */
+  quickMessageCooldownSec: 1.5,
 
   /** (M5+) Placeholder weights: 1 each, tune after play-tests. Negative factors subtract. */
   scoring: {

@@ -40,6 +40,7 @@ import {
 import { BotBrain } from "../bots";
 import { Round } from "../game/round";
 import { ViewSync } from "../views";
+import { Huddles } from "../game/huddle";
 
 /** Codes in use on this server process (one process on Render's free tier). */
 const codesInUse = new Set<string>();
@@ -61,7 +62,11 @@ export class GullyRoom extends Room<{ state: GameState; input: MoveInput }> {
   });
 
   private round = new Round(this.state);
+  private huddles = new Huddles(this.state);
   private views = new ViewSync(this.state);
+  /** Anti-spam timestamps (ms) per player. */
+  private lastChat = new Map<string, number[]>();
+  private lastQuick = new Map<string, number>();
   private botCounter = 0;
   private brains = new Map<string, BotBrain>();
   /** Humans who left for good during a round: removed when everyone returns to the lobby. */
@@ -73,7 +78,13 @@ export class GullyRoom extends Room<{ state: GameState; input: MoveInput }> {
     [ClientMsg.RemoveBot]: (client: Client, botId?: unknown) => this.handleRemoveBot(client, botId),
     [ClientMsg.Action]: (client: Client, payload?: ActionPayload) => this.handleAction(client, payload),
     [ClientMsg.RoleAction]: (client: Client, payload?: RoleActionPayload) => this.handleRoleAction(client, payload),
-    [ClientMsg.Pass]: (client: Client) => this.round.pass(client.sessionId),
+    [ClientMsg.Pass]: (client: Client) => {
+      if (!this.huddles.active) this.round.pass(client.sessionId);
+    },
+    [ClientMsg.CallHuddle]: (client: Client) => this.huddles.call(client.sessionId),
+    [ClientMsg.EndHuddle]: (client: Client) => this.huddles.end(client.sessionId),
+    [ClientMsg.HuddleChat]: (client: Client, text?: unknown) => this.handleHuddleChat(client, text),
+    [ClientMsg.QuickMessage]: (client: Client, index?: unknown) => this.handleQuickMessage(client, index),
     [ClientMsg.Whisper]: (client: Client, text?: unknown) => this.handleWhisper(client, text),
     [ClientMsg.BackToLobby]: (client: Client) => this.handleBackToLobby(client),
     [ClientMsg.SetEasyBots]: (client: Client, on?: unknown) => {
@@ -104,6 +115,18 @@ export class GullyRoom extends Room<{ state: GameState; input: MoveInput }> {
    * Frozen players don't move.
    */
   private step(ctx: StepContext) {
+    // Huddle: the whole game and the timer pause (GDD). Throw inputs away, run the huddle clock.
+    if (this.state.phase === Phase.Playing && this.huddles.active) {
+      for (const [id] of this.state.players) {
+        const channel = this.inputs.get(id);
+        if (channel) for (const _ of channel) void _;
+      }
+      this.huddles.tick(ctx.dt);
+      this.deliverEvents();
+      this.views.update(this.clients);
+      return;
+    }
+
     const playing = this.state.phase === Phase.Playing;
 
     for (const [id, player] of this.state.players) {
@@ -131,8 +154,10 @@ export class GullyRoom extends Room<{ state: GameState; input: MoveInput }> {
     this.views.update(this.clients);
   }
 
-  /** Round events -> messages. Pings go only to that Detective. */
+  /** Round events -> messages. Pings go only to that Detective. Bot huddle lines go to their team. */
   private deliverEvents() {
+    for (const line of this.huddles.outbox) this.sendToTeam(line.team, line.fromId, line.from, line.text);
+    this.huddles.outbox = [];
     for (const e of this.round.events) {
       if (e.type === "announce") {
         this.broadcast(ServerEvent.Announce, e.text);
@@ -225,13 +250,49 @@ export class GullyRoom extends Room<{ state: GameState; input: MoveInput }> {
     if (!check.ok) return this.notice(client, check.reason);
 
     this.round.start();
+    this.huddles.reset();
     this.state.phase = Phase.Playing;
     this.lock(); // no new joins mid-round
     this.views.update(this.clients);
     console.log(`[room ${this.roomId}] round started with ${this.state.players.size} players`);
   }
 
+  /** Huddle chat: only during a huddle, only to the team you sit in (the spy hears its fake team). */
+  private handleHuddleChat(client: Client, text: unknown) {
+    const me = this.state.players.get(client.sessionId);
+    if (!me || !this.huddles.active || typeof text !== "string") return;
+    const clean = text.replace(/[\u0000-\u001f\u007f]/g, "").trim().slice(0, CONFIG.huddle.chatMaxLength);
+    if (!clean) return;
+    // Anti-spam: at most chatPerSecond lines in any one second.
+    const now = this.clock.currentTime;
+    const recent = (this.lastChat.get(me.id) ?? []).filter((t) => now - t < 1000);
+    if (recent.length >= CONFIG.huddle.chatPerSecond) return;
+    recent.push(now);
+    this.lastChat.set(me.id, recent);
+    this.sendToTeam(me.team, me.id, me.nickname, clean);
+  }
+
+  /** One-tap message: to everyone sitting in your team, any time in a round (frozen too, D10). */
+  private handleQuickMessage(client: Client, index: unknown) {
+    const me = this.state.players.get(client.sessionId);
+    if (!me || this.state.phase !== Phase.Playing) return;
+    if (typeof index !== "number" || !Number.isInteger(index) || index < 0 || index >= CONFIG.quickMessages.length) return;
+    const now = this.clock.currentTime;
+    if (now - (this.lastQuick.get(me.id) ?? -Infinity) < CONFIG.quickMessageCooldownSec * 1000) return;
+    this.lastQuick.set(me.id, now);
+    for (const p of this.state.players.values()) {
+      if (p.team === me.team) this.clientFor(p.id)?.send(ServerEvent.QuickMessage, { fromId: me.id, from: me.nickname, index });
+    }
+  }
+
+  private sendToTeam(team: string, fromId: string, from: string, text: string) {
+    for (const p of this.state.players.values()) {
+      if (p.team === team) this.clientFor(p.id)?.send(ServerEvent.HuddleChat, { fromId, from, text });
+    }
+  }
+
   private handleAction(client: Client, payload?: ActionPayload) {
+    if (this.huddles.active) return; // the game is paused
     // Validate the shape; Round re-checks the rules.
     if (!payload || !ACTION_KINDS.includes(payload.kind as ActionKind)) return;
     const targetId = typeof payload.targetId === "string" ? payload.targetId : "";
@@ -239,6 +300,7 @@ export class GullyRoom extends Room<{ state: GameState; input: MoveInput }> {
   }
 
   private handleRoleAction(client: Client, payload?: RoleActionPayload) {
+    if (this.huddles.active) return; // the game is paused
     if (!payload || !ROLE_ACTION_KINDS.includes(payload.kind as RoleActionKind)) return;
     if (typeof payload.targetId !== "string") return;
     this.round.roleAct(client.sessionId, { kind: payload.kind as RoleActionKind, targetId: payload.targetId });
@@ -280,6 +342,9 @@ export class GullyRoom extends Room<{ state: GameState; input: MoveInput }> {
     this.state.potli.carrierId = "";
     this.state.potli.snatcherId = "";
     this.state.footprints.clear();
+    this.huddles.close();
+    this.state.huddlesLeftBlue = 0;
+    this.state.huddlesLeftGreen = 0;
     this.state.winner = "";
     this.state.endReason = "";
     this.state.timeLeft = 0;

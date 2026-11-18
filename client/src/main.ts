@@ -13,11 +13,13 @@ import {
   cleanNickname,
   isValidRoomCode,
   type FrozenPingPayload,
+  type HuddleChatPayload,
+  type QuickMessagePayload,
   type WhisperPayload,
 } from "@gully/shared";
 import { createRoom, forget, friendlyError, joinRoom, tryReconnect, type GameRoom } from "./net";
 import { startGame } from "./game/GameScene";
-import { addPing, clearFeed, pushFeed } from "./game/feed";
+import { addBubble, addHuddleLine, addPing, clearFeed, pushFeed } from "./game/feed";
 
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
 
@@ -112,6 +114,13 @@ function attach(r: GameRoom) {
   r.onMessage(ServerEvent.FrozenPing, (m: FrozenPingPayload) => {
     pushFeed(`${m.name} was just frozen. Follow the white arrow!`, "ping");
     addPing(m.x, m.y);
+  });
+  // M4: huddle chat and one-tap messages (the server only sends us our own team's).
+  r.onMessage(ServerEvent.HuddleChat, (m: HuddleChatPayload) => addHuddleLine(m.from, m.text, m.fromId === r.sessionId));
+  r.onMessage(ServerEvent.QuickMessage, (m: QuickMessagePayload) => {
+    const text = CONFIG.quickMessages[m.index] ?? "";
+    pushFeed(`${m.from}: ${text}`, "quick");
+    addBubble(m.fromId, text);
   });
   r.onLeave(() => {
     room = null;

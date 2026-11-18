@@ -57,7 +57,28 @@
     <div id="game" class="hidden">
       <div class="hud">
         <span id="hud-team" class="team-badge"></span>
+        <button id="btn-huddle" class="btn-small btn-huddle hidden" type="button">Huddle</button>
         <span id="hud-hint" class="hud-hint"></span>
+      </div>
+
+      <!-- One-tap messages to your team (keys 1–4) -->
+      <div id="quick-bar" class="quick-bar hidden"></div>
+
+      <!-- Leader-called huddle: game paused, team-only chat -->
+      <div id="huddle-overlay" class="huddle-overlay hidden">
+        <div class="huddle-card">
+          <div class="huddle-head">
+            <h2 id="huddle-title">Huddle</h2>
+            <span id="huddle-time" class="huddle-time">2:30</span>
+          </div>
+          <p class="hint">Game paused. Only your team can read this chat… and the spy hiding in it.</p>
+          <div id="huddle-log" class="huddle-log"></div>
+          <form id="huddle-form" class="row">
+            <input id="huddle-input" placeholder="Say something to your team" autocomplete="off" />
+            <button class="btn small" type="submit">Send</button>
+          </form>
+          <button id="btn-end-huddle" class="btn ghost hidden" type="button">End huddle</button>
+        </div>
       </div>
       <div id="hud-timer" class="hud-timer">0:00</div>
       <div id="hud-alert" class="hud-alert hidden"></div>

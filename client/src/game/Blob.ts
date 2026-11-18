@@ -100,12 +100,37 @@ export class Blob extends Phaser.GameObjects.Container {
   }
 
   private rescueText: Phaser.GameObjects.Text;
+  private bubble?: Phaser.GameObjects.Text;
+  private bubbleText = "";
+
+  /** A quick-message speech bubble above the head ("" hides it). */
+  setBubble(text: string) {
+    if (text === this.bubbleText) return;
+    this.bubbleText = text;
+    if (!this.bubble) {
+      this.bubble = this.scene.add
+        .text(0, -R - 30, "", {
+          fontFamily: "system-ui, sans-serif",
+          fontSize: "13px",
+          fontStyle: "bold",
+          color: "#1b1d24",
+          backgroundColor: "#f1f2f6",
+          padding: { x: 7, y: 4 },
+        })
+        .setOrigin(0.5, 1)
+        .setResolution(Math.min(window.devicePixelRatio || 1, 3))
+        .setScale(this.label.scaleX);
+      this.add(this.bubble);
+    }
+    this.bubble.setText(text).setVisible(text !== "");
+  }
 
   /** Keep the name the same size on screen at any zoom. */
   setLabelZoom(zoom: number) {
     this.label.setScale(1 / zoom);
     this.thawText.setScale(1 / zoom);
     this.rescueText.setScale(1 / zoom);
+    this.bubble?.setScale(1 / zoom);
   }
 
   /** Redraw rings, ice and badges, only when something changed. */

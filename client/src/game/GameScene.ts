@@ -35,7 +35,7 @@ import { drawMap } from "./draw";
 import { Hud } from "./hud";
 import { Potli } from "./Potli";
 import { COLORS, TEAM_COLORS } from "./colors";
-import { pings } from "./feed";
+import { bubbles, pings } from "./feed";
 
 type Predictor = ReturnType<typeof Predict.get>;
 
@@ -64,7 +64,7 @@ function netFor(room: GameRoom) {
       step: (ctx, predicted, command) => {
         const s = room.state;
         const self = s.players.get(room.sessionId);
-        if (!self || self.frozen) return;
+        if (!self || self.frozen || s.huddle?.active) return; // frozen, or game paused for a huddle
         const potli = s.potli ?? NO_POTLI; // may be out of my view
         stepPlayer(predicted, command as MoveInput, ctx.dt, speedMultiplier(self, s.players.values(), potli));
       },
@@ -131,7 +131,9 @@ export class GameScene extends Phaser.Scene {
     // Drives prediction + smoothing, and tells us how many fixed steps are due,
     // so we send exactly one input per server step.
     const steps = this.predict.tick(performance.now());
-    const { moveX, moveY } = this.controls.axes();
+    // During a huddle the game is paused: send "standing still".
+    const paused = !!this.room.state.huddle?.active;
+    const { moveX, moveY } = paused ? { moveX: 0, moveY: 0 } : this.controls.axes();
     for (let i = 0; i < steps; i++) {
       this.moveInput.data.moveX = moveX;
       this.moveInput.data.moveY = moveY;
@@ -179,6 +181,8 @@ export class GameScene extends Phaser.Scene {
         isMe ? this.predict.value(p, "fy") : (p as PlayerState).fy,
       );
       blob.setConnected(p.connected);
+      const b = bubbles.get(id);
+      blob.setBubble(b && b.until > performance.now() ? b.text : "");
       blob.setLook({
         freeze: p.frozen ? p.freeze || "ice" : "",
         leader: p.role === "leader",
