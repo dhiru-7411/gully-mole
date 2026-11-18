@@ -76,6 +76,11 @@ input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
 .row { display: flex; gap: 10px; }
 #host-controls { display: flex; flex-direction: column; gap: 10px; }
 
+.server-status { margin: 0; padding: 10px 12px; border-radius: 10px; font-size: 14px; line-height: 1.4; }
+.server-status.waking { background: rgba(255, 212, 59, 0.12); border: 1px solid var(--accent); color: var(--accent); }
+.server-status.ready { background: rgba(63, 209, 122, 0.12); border: 1px solid #3fd17a; color: #8ff0b5; }
+.server-status.down { background: rgba(255, 92, 92, 0.12); border: 1px solid var(--danger); color: #ffb3b3; }
+
 .check { display: flex; gap: 10px; align-items: center; color: var(--muted); font-size: 14px; cursor: pointer; }
 .check input { width: 20px; height: 20px; accent-color: var(--accent); }
 

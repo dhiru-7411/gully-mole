@@ -18,7 +18,7 @@ import {
   type QuickMessagePayload,
   type WhisperPayload,
 } from "@gully/shared";
-import { createRoom, forget, friendlyError, joinRoom, tryReconnect, type GameRoom } from "./net";
+import { createRoom, forget, friendlyError, joinRoom, pingServer, tryReconnect, type GameRoom } from "./net";
 import { startGame } from "./game/GameScene";
 import { addBubble, addHuddleLine, addPing, clearFeed, pushFeed } from "./game/feed";
 
@@ -283,3 +283,31 @@ function safeLocalSet(key: string, value: string) {
 tryReconnect().then((r) => {
   if (r) attach(r);
 });
+
+/**
+ * Wake the game server as soon as the page opens. Free hosting puts it to sleep
+ * when nobody plays; if it doesn't answer quickly, tell people why they're waiting.
+ */
+async function wakeServer() {
+  const status = $("server-status");
+  const slow = setTimeout(() => {
+    status.textContent = "Waking up the game server… free hosting naps when nobody plays. This can take up to a minute.";
+    status.className = "server-status waking";
+  }, 1500);
+  for (let tries = 0; tries < 30; tries++) {
+    if (await pingServer()) {
+      clearTimeout(slow);
+      if (!status.classList.contains("hidden")) {
+        status.textContent = "Server is awake. Have fun!";
+        status.className = "server-status ready";
+        setTimeout(() => status.classList.add("hidden"), 3000);
+      }
+      return;
+    }
+    await new Promise((res) => setTimeout(res, 3000));
+  }
+  clearTimeout(slow);
+  status.textContent = "Can't reach the game server. Try again in a minute.";
+  status.className = "server-status down";
+}
+wakeServer();
