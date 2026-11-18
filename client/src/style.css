@@ -338,6 +338,8 @@ input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
   text-align: right;
 }
 .quick-bar button:active { background: var(--panel); }
+.quick-chips { display: flex; flex-direction: column; gap: 8px; align-items: flex-end; }
+.quick-toggle { align-self: flex-end; opacity: 0.85; }
 .quick-bar kbd { color: var(--muted); font: inherit; font-size: 11px; margin-right: 6px; }
 @media (pointer: coarse) { .quick-bar kbd { display: none; } }
 .feed-quick { border: 1px solid #9be7ff; }
