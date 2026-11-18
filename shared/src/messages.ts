@@ -31,6 +31,14 @@ export const ClientMsg = {
   Whisper: "whisper",
   /** Host only, lobby, dev: turn easy bots on/off. Payload: boolean. */
   SetEasyBots: "setEasyBots",
+  /** Leader only: pause the game and open team chats. */
+  CallHuddle: "callHuddle",
+  /** The Leader who called the huddle: end it early. */
+  EndHuddle: "endHuddle",
+  /** During a huddle: a chat line to your team. Payload: string. */
+  HuddleChat: "huddleChat",
+  /** One-tap message to your team. Payload: index into CONFIG.quickMessages. */
+  QuickMessage: "quickMessage",
 } as const;
 
 export interface RoleActionPayload {
@@ -46,7 +54,23 @@ export const ServerEvent = {
   FrozenPing: "frozenPing",
   /** To a spy's real team (and the spy): payload { from, text }. */
   Whisper: "whisper",
+  /** Huddle chat line, to everyone sitting in that team (incl. the spy hiding there). */
+  HuddleChat: "huddleChat",
+  /** One-tap message, to everyone sitting in the sender's team. */
+  QuickMessage: "quickMessage",
 } as const;
+
+export interface HuddleChatPayload {
+  fromId: string;
+  from: string;
+  text: string;
+}
+
+export interface QuickMessagePayload {
+  fromId: string;
+  from: string;
+  index: number;
+}
 
 export interface FrozenPingPayload {
   x: number;

@@ -6,7 +6,32 @@
 const MAX = 4;
 const LIFETIME_MS = 7000;
 
-export type FeedKind = "announce" | "whisper" | "ping";
+export type FeedKind = "announce" | "whisper" | "ping" | "quick";
+
+/** Huddle chat log (shown inside the huddle overlay). */
+export function addHuddleLine(from: string, text: string, isMe: boolean) {
+  const log = document.getElementById("huddle-log");
+  if (!log) return;
+  const line = document.createElement("div");
+  if (isMe) line.className = "me";
+  const who = document.createElement("span");
+  who.className = "who";
+  who.textContent = from; // textContent: chat can't inject HTML
+  line.append(who, document.createTextNode(text));
+  log.append(line);
+  log.scrollTop = log.scrollHeight;
+}
+
+export function clearHuddleLog() {
+  document.getElementById("huddle-log")?.replaceChildren();
+}
+
+/** Quick-message speech bubbles above blobs: player id -> text + expiry. */
+export const bubbles = new Map<string, { text: string; until: number }>();
+
+export function addBubble(playerId: string, text: string) {
+  bubbles.set(playerId, { text, until: performance.now() + 3500 });
+}
 
 export function pushFeed(text: string, kind: FeedKind = "announce") {
   const feed = document.getElementById("hud-feed");

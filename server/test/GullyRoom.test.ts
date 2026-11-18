@@ -210,7 +210,8 @@ describe("GullyRoom movement (M1)", () => {
   it("the Action message tags an enemy on your half (and the server re-checks the rules)", async () => {
     const { room, host } = await startedRoom();
     const me = room.state.players.get(host.sessionId)!;
-    const enemy = [...room.state.players.values()].find((p) => p.team && p.team !== me.team)!;
+    // A real enemy (not the spy my own team planted over there: D54 says I may not tag them).
+    const enemy = [...room.state.players.values()].find((p) => p.team && p.team !== me.team && p.realTeam !== me.realTeam)!;
     // Put both on MY half, side by side, and freeze time for bots by ending their influence.
     const myHalfX = (me.team === "blue" ? 900 : 1500) * MAP_SCALE;
     me.x = myHalfX;

@@ -20,6 +20,7 @@ import {
   type Team,
 } from "@gully/shared";
 import type { GameRoom } from "../net";
+import { clearHuddleLog } from "./feed";
 
 const LABELS: Record<ActionKind, string> = {
   unfreeze: "Unfreeze",
@@ -64,12 +65,40 @@ export class Hud {
   private backBtn = $<HTMLButtonElement>("btn-back");
   private endWait = $("end-wait");
 
+  private huddleBtn = $<HTMLButtonElement>("btn-huddle");
+  private quickBar = $("quick-bar");
+  private huddleOverlay = $("huddle-overlay");
+  private huddleForm = $<HTMLFormElement>("huddle-form");
+  private huddleInput = $<HTMLInputElement>("huddle-input");
+  private endHuddleBtn = $<HTMLButtonElement>("btn-end-huddle");
+
   private current: Action | null = null;
   private currentRole: RoleAction | null = null;
   private passOk = false;
   private roleCardShown = false;
+  private wasHuddle = false;
 
   constructor(private room: GameRoom) {
+    // Quick-message chips (keys 1–4).
+    this.quickBar.replaceChildren(
+      ...CONFIG.quickMessages.map((text, i) => {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.innerHTML = `<kbd>${i + 1}</kbd>`;
+        b.append(text);
+        b.addEventListener("pointerdown", (e) => {
+          e.preventDefault();
+          this.sendQuick(i);
+        });
+        return b;
+      }),
+    );
+    this.huddleBtn.addEventListener("click", this.callHuddle);
+    this.endHuddleBtn.addEventListener("click", this.endHuddle);
+    this.huddleForm.addEventListener("submit", this.sendHuddleChat);
+    this.huddleInput.maxLength = CONFIG.huddle.chatMaxLength;
+    this.huddleInput.addEventListener("keydown", (e) => e.stopPropagation()); // typing doesn't move you
+
     this.actionBtn.addEventListener("pointerdown", this.pressAction);
     this.roleBtn.addEventListener("pointerdown", this.pressRole);
     this.passBtn.addEventListener("pointerdown", this.pressPass);
@@ -89,10 +118,54 @@ export class Hud {
     this.whisperInput.removeEventListener("keydown", this.onWhisperKey);
     this.backBtn.removeEventListener("click", this.pressBack);
     removeEventListener("keydown", this.onKey);
-    for (const el of [this.end, this.alert, this.roleCard, this.whisperBox, this.whisperBtn, this.roleBtn]) {
-      el.classList.add("hidden");
-    }
+    this.huddleBtn.removeEventListener("click", this.callHuddle);
+    this.endHuddleBtn.removeEventListener("click", this.endHuddle);
+    this.huddleForm.removeEventListener("submit", this.sendHuddleChat);
+    const all = [this.end, this.alert, this.roleCard, this.whisperBox, this.whisperBtn, this.roleBtn];
+    for (const el of [...all, this.huddleBtn, this.quickBar, this.huddleOverlay]) el.classList.add("hidden");
   }
+
+  /** Huddle button, quick chips and the huddle screen. */
+  private updateComms(s: GameState, me: PlayerState) {
+    const playing = s.phase === Phase.Playing;
+    const huddle = playing && !!s.huddle?.active;
+
+    // Leader's huddle button: "Huddle (2)", disabled while frozen or none left.
+    const left = me.team === "blue" ? s.huddlesLeftBlue : s.huddlesLeftGreen;
+    this.huddleBtn.classList.toggle("hidden", !(playing && !huddle && me.role === "leader"));
+    this.huddleBtn.textContent = `Huddle (${left})`;
+    this.huddleBtn.disabled = me.frozen || left === 0;
+
+    this.quickBar.classList.toggle("hidden", !playing || huddle);
+
+    // The huddle screen.
+    this.huddleOverlay.classList.toggle("hidden", !huddle);
+    if (huddle) {
+      if (!this.wasHuddle) {
+        clearHuddleLog();
+        this.roleCard.classList.add("hidden");
+        if (!matchMedia("(pointer: coarse)").matches) this.huddleInput.focus();
+      }
+      const h = s.huddle;
+      $("huddle-title").textContent = `Huddle, called by ${h.callerName} (${names[h.callerTeam]})`;
+      const m = Math.floor(h.secondsLeft / 60);
+      $("huddle-time").textContent = `${m}:${String(h.secondsLeft % 60).padStart(2, "0")}`;
+      this.endHuddleBtn.classList.toggle("hidden", h.callerId !== me.id);
+    } else if (this.wasHuddle) {
+      this.huddleInput.blur();
+    }
+    this.wasHuddle = huddle;
+  }
+
+  private callHuddle = () => this.room.send(ClientMsg.CallHuddle);
+  private endHuddle = () => this.room.send(ClientMsg.EndHuddle);
+  private sendHuddleChat = (e: Event) => {
+    e.preventDefault();
+    const text = this.huddleInput.value.trim();
+    if (text) this.room.send(ClientMsg.HuddleChat, text);
+    this.huddleInput.value = "";
+  };
+  private sendQuick = (i: number) => this.room.send(ClientMsg.QuickMessage, i);
 
   update(view: HudView) {
     const s = this.room.state;
@@ -126,9 +199,10 @@ export class Hud {
     this.passBtn.classList.toggle("hidden", !view.canPass);
     this.whisperBtn.classList.toggle("hidden", !(me.secretRole === "spy" && s.phase === Phase.Playing));
 
-    this.alert.textContent = s.phase === Phase.Playing ? this.alertText(s, me, team) : "";
+    this.alert.textContent = s.phase === Phase.Playing && !s.huddle?.active ? this.alertText(s, me, team) : "";
     this.alert.classList.toggle("hidden", this.alert.textContent === "");
 
+    this.updateComms(s, me);
     this.updateEnd(s);
   }
 
@@ -264,7 +338,18 @@ export class Hud {
   };
 
   private onKey = (e: KeyboardEvent) => {
-    if (e.repeat || document.activeElement === this.whisperInput) return;
+    if (e.repeat || document.activeElement instanceof HTMLInputElement) return; // typing somewhere
+    const s = this.room.state;
+    if (s.huddle?.active) return; // paused
+    const k = e.key.toLowerCase();
+    if (k >= "1" && k <= String(CONFIG.quickMessages.length)) {
+      this.sendQuick(Number(k) - 1);
+      return;
+    }
+    if (k === "h" && !this.huddleBtn.classList.contains("hidden") && !this.huddleBtn.disabled) {
+      this.callHuddle();
+      return;
+    }
     if (e.code === "Space") {
       e.preventDefault();
       this.pressAction();

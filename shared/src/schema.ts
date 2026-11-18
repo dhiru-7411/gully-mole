@@ -122,6 +122,20 @@ export const Footprint = schema(
 );
 export type Footprint = SchemaType<typeof Footprint>;
 
+/** A Leader-called huddle (M4): the whole game and the timer pause. */
+export const HuddleState = schema(
+  {
+    active: t.boolean().default(false),
+    callerId: t.string().default(""),
+    callerName: t.string().default(""),
+    callerTeam: t.string().default(""),
+    /** Whole seconds until the huddle ends by itself. */
+    secondsLeft: t.uint16().default(0),
+  },
+  "HuddleState",
+);
+export type HuddleState = SchemaType<typeof HuddleState>;
+
 /**
  * One input frame from a client: joystick/keyboard axes, -127..127 each.
  * The server clamps them (never trust the wire) and runs one movement step per
@@ -151,8 +165,12 @@ export const GameState = schema(
     footprints: t.map(Footprint).view(),
     /** How many players are in the room (the players map is filtered, so the lobby count lives here). */
     playerCount: t.uint8().default(0),
-    /** Whole seconds left in the round. */
+    /** Whole seconds left in the round (paused during huddles). */
     timeLeft: t.uint16().default(0),
+    huddle: t.ref(HuddleState).default(() => new HuddleState()),
+    /** Huddles each team's Leader can still call this round. */
+    huddlesLeftBlue: t.uint8().default(0),
+    huddlesLeftGreen: t.uint8().default(0),
     /** After a round: "blue" | "green" | "draw". */
     winner: t.string().default(""),
     /** After a round: "home" | "wipeout" | "time". */
