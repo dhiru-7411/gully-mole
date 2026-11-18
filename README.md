@@ -80,6 +80,7 @@ Scoring weights are in `shared/src/config.ts` (`scoring`, all 1 for now); the fa
 
 - **Huddles:** only a Leader can call one (2 per round, not while frozen). The **whole game and the timer pause**, and each team gets its own private chat for 2.5 minutes. The spy sits in their fake team's huddle and hears everything. The Leader who called it can end it early.
 - **Quick messages:** one tap (or keys 1–4) sends "Spy near the fire!", "Leader frozen!", "Potli on the left!" or "Trust me bro" to your team, as a speech bubble and a feed line.
+- **How to play (D69):** first-time visitors get a short 5-page guide (goal, controls, freezing, secret roles, talk and awards). Reopen it any time with **❓ How to play** on the home or lobby screen.
 - **Whisper:** the spy's private line to their real team (M3).
 
 ### Roles and secrets (M3)
