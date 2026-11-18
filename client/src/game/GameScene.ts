@@ -43,7 +43,8 @@ type Predictor = ReturnType<typeof Predict.get>;
  * Prediction is set up once per room connection and reused by every round,
  * so playing again doesn't stack up duplicate predictors.
  */
-const NO_POTLI = { x: 0, y: 0, carrierId: "", snatcherId: "" };
+/** The potlis I can currently see (D68), as a plain list (the map may be missing before the first patch). */
+const potlisOf = (s: GameRoom["state"]) => (s.potlis ? [...s.potlis.values()] : []);
 
 const netByRoom = new WeakMap<GameRoom, { predict: Predictor; input: InputHandle<MoveInput> }>();
 
@@ -65,8 +66,8 @@ function netFor(room: GameRoom) {
         const s = room.state;
         const self = s.players.get(room.sessionId);
         if (!self || self.frozen || s.huddle?.active) return; // frozen, or game paused for a huddle
-        const potli = s.potli ?? NO_POTLI; // may be out of my view
-        stepPlayer(predicted, command as MoveInput, ctx.dt, speedMultiplier(self, s.players.values(), potli));
+        // The potli I carry is always in my view, so carrying speed predicts right.
+        stepPlayer(predicted, command as MoveInput, ctx.dt, speedMultiplier(self, s.players.values(), potlisOf(s)));
       },
     });
   }
@@ -82,7 +83,8 @@ export class GameScene extends Phaser.Scene {
   private controls!: Controls;
   private hud!: Hud;
   private blobs = new Map<string, Blob>();
-  private potli!: Potli;
+  /** One sprite per potli id (D68). */
+  private potlis = new Map<string, Potli>();
   private arrows!: Phaser.GameObjects.Graphics;
   private fog!: Phaser.GameObjects.Graphics;
   private prints!: Phaser.GameObjects.Graphics;
@@ -99,7 +101,6 @@ export class GameScene extends Phaser.Scene {
     drawMap(this);
     this.prints = this.add.graphics().setDepth(5);
     this.fog = this.add.graphics().setDepth(8);
-    this.potli = new Potli(this);
     this.arrows = this.add.graphics().setDepth(30);
 
     const net = netFor(this.room);
@@ -156,7 +157,7 @@ export class GameScene extends Phaser.Scene {
     const s = this.room.state;
     const me = s.players.get(this.room.sessionId);
     const myRealTeam = me?.realTeam || me?.team;
-    const carrierId = s.potli?.carrierId ?? "";
+    const carried = new Map(potlisOf(s).filter((p) => p.carrierId).map((p) => [p.carrierId, p]));
 
     for (const [id, blob] of this.blobs) {
       if (!s.players.has(id)) {
@@ -187,11 +188,10 @@ export class GameScene extends Phaser.Scene {
         freeze: p.frozen ? p.freeze || "ice" : "",
         leader: p.role === "leader",
         protected: p.protected,
-        carrying: carrierId === id,
-        snatch:
-          carrierId === id && s.potli.snatcherId
-            ? Math.round((s.potli.snatchLeft / CONFIG.timers.snatchCountdownSec) * 20) / 20
-            : 0,
+        carrying: carried.has(id),
+        snatch: carried.get(id)?.snatcherId
+          ? Math.round((carried.get(id)!.snatchLeft / CONFIG.timers.snatchCountdownSec) * 20) / 20
+          : 0,
         thawIn: p.frozen ? p.thawIn : 0,
         // These secrets only arrive if I'm allowed to know them (server-side views).
         detective: p.secretRole === "detective",
@@ -211,16 +211,23 @@ export class GameScene extends Phaser.Scene {
 
   private syncPotli(time: number) {
     const s = this.room.state;
-    // Not in my view (hidden behind a wall or out of range): don't draw it.
-    if (!s.potli) {
-      this.potli.setVisible(false);
-      return;
+    const inView = new Map(potlisOf(s).map((p) => [p.id, p]));
+    // Out of my view (behind a wall or out of range): the server stopped sending it.
+    for (const [id, sprite] of this.potlis) {
+      if (!inView.has(id)) sprite.setVisible(false);
     }
-    this.potli.setVisible(true);
-    const carrierBlob = this.blobs.get(s.potli.carrierId);
-    if (carrierBlob) this.potli.show(carrierBlob.x, carrierBlob.y, true, time);
-    else if (!s.potli.carrierId) this.potli.show(s.potli.x, s.potli.y, false, time);
-    else this.potli.setVisible(false); // carried by someone I can't see
+    for (const [id, p] of inView) {
+      let sprite = this.potlis.get(id);
+      if (!sprite) {
+        sprite = new Potli(this);
+        this.potlis.set(id, sprite);
+      }
+      sprite.setScored(p.scoredBy);
+      const carrierBlob = this.blobs.get(p.carrierId);
+      if (carrierBlob) sprite.setVisible(true).show(carrierBlob.x, carrierBlob.y, true, time);
+      else if (!p.carrierId) sprite.setVisible(true).show(p.x, p.y, false, time);
+      else sprite.setVisible(false); // carried by someone I can't see
+    }
   }
 
   /** Footprints left by a secret freeze: only the ones I can see are ever sent. */
@@ -295,10 +302,13 @@ export class GameScene extends Phaser.Scene {
       g.strokeTriangle(tip.x, tip.y, left.x, left.y, right.x, right.y);
     };
 
-    if (me.role === "leader" && s.potli && s.potli.carrierId !== me.id) {
-      // The Leader is always sent the potli; if its carrier is out of sight, use the potli's position.
-      const carrierBlob = this.blobs.get(s.potli.carrierId);
-      arrow(carrierBlob?.x ?? s.potli.x, carrierBlob?.y ?? s.potli.y, COLORS.gold);
+    if (me.role === "leader") {
+      // The Leader is always sent both potlis (D68): an arrow to each one that's still in play.
+      for (const p of potlisOf(s)) {
+        if (p.carrierId === me.id || p.scoredBy === me.team) continue;
+        const carrierBlob = this.blobs.get(p.carrierId);
+        arrow(carrierBlob?.x ?? p.x, carrierBlob?.y ?? p.y, COLORS.gold);
+      }
     }
     for (const [id, p] of s.players) {
       if (id !== me.id && p.team === me.team && p.role === "leader" && p.frozen) {
@@ -324,11 +334,12 @@ export class GameScene extends Phaser.Scene {
     // Use my predicted position (what I see) with everyone else's server positions.
     const myView: RulePlayer = { ...plain(me), x: this.predict.value(me, "x"), y: this.predict.value(me, "y") };
     const others = [...s.players.values()].map((p) => (p.id === me.id ? myView : plain(p)));
-    const playing = s.phase === "playing" && !!s.potli;
+    const playing = s.phase === "playing";
+    const pots = potlisOf(s);
     this.hud.update({
-      action: playing ? bestAction(myView, others, s.potli) : null,
-      roleAction: s.phase === "playing" ? bestRoleAction(myView, others) : null,
-      canPass: playing && !!passTarget(myView, others, s.potli),
+      action: playing ? bestAction(myView, others, pots) : null,
+      roleAction: playing ? bestRoleAction(myView, others) : null,
+      canPass: playing && !!passTarget(myView, others, pots),
     });
   }
 

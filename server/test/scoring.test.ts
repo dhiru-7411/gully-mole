@@ -71,7 +71,7 @@ describe("automatic stats (GDD factors)", () => {
     const { state, round, place, ticks, row, endNow } = setup();
     place("b3", GREEN_SIDE);
     place("g3", GREEN_SIDE, 40);
-    state.potli.carrierId = "b3";
+    state.potlis.get("north")!.carrierId = "b3";
     round.act("g3", { kind: "snatch", targetId: "b3" });
     ticks(CONFIG.timers.snatchCountdownSec + 0.2);
     endNow();
@@ -126,8 +126,8 @@ describe("timeout winner and the summary", () => {
 
   it("the summary has every factor, key moments, and only awards that apply", () => {
     const { state, round, place, endNow } = setup();
-    place("b3", MAP.middleZone);
-    round.act("b3", { kind: "grab", targetId: "" });
+    place("b3", MAP.potliStarts[0]);
+    round.act("b3", { kind: "grab", targetId: "north" });
     endNow();
     const s = state.summary;
     expect(s.factors.length).toBe(FACTORS.length);

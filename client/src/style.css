@@ -163,7 +163,11 @@ input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
   z-index: 5;
   pointer-events: none;
 }
-.hud-timer.low { color: #ff8a8a; }
+.hud-timer { display: flex; gap: 10px; align-items: center; }
+.hud-timer.low .clock { color: #ff8a8a; }
+.hud-timer .score { font-size: 14px; padding: 1px 7px; border-radius: 999px; color: #fff; }
+.hud-timer .score.blue { background: #4a83ff; }
+.hud-timer .score.green { background: #3fd17a; color: #0f2a1a; }
 
 .hud-alert {
   position: absolute;

@@ -32,7 +32,7 @@ const p = (id: string, team: string, at: { x: number; y: number }, extra: Partia
   protected: false,
   ...extra,
 });
-const loose = (at = { x: 0, y: 0 }): RulePotli => ({ ...at, carrierId: "", snatcherId: "" });
+const loose = (at = { x: 0, y: 0 }): RulePotli => ({ id: "north", ...at, carrierId: "", snatcherId: "" });
 const near = (at: { x: number; y: number }, dx = 40) => ({ x: at.x + dx, y: at.y });
 
 describe("tagging (D1: target must be on the tagger's half)", () => {
@@ -101,18 +101,18 @@ describe("the potli", () => {
   it("pass only to a free teammate right beside you", () => {
     const me = p("b", "blue", blueSpot);
     const potli = { ...loose(blueSpot), carrierId: "b" };
-    expect(canPass(me, p("b2", "blue", near(blueSpot)), potli)).toBe(true);
-    expect(canPass(me, p("b2", "blue", near(blueSpot, CONFIG.distances.handOff + 5)), potli)).toBe(false);
-    expect(canPass(me, p("b2", "blue", near(blueSpot), { frozen: true }), potli)).toBe(false);
-    expect(canPass(me, p("g", "green", near(blueSpot)), potli)).toBe(false);
-    expect(canPass(me, p("b2", "blue", near(blueSpot)), loose(blueSpot))).toBe(false); // not carrying
+    expect(canPass(me, p("b2", "blue", near(blueSpot)), [potli])).toBe(true);
+    expect(canPass(me, p("b2", "blue", near(blueSpot, CONFIG.distances.handOff + 5)), [potli])).toBe(false);
+    expect(canPass(me, p("b2", "blue", near(blueSpot), { frozen: true }), [potli])).toBe(false);
+    expect(canPass(me, p("g", "green", near(blueSpot)), [potli])).toBe(false);
+    expect(canPass(me, p("b2", "blue", near(blueSpot)), [loose(blueSpot)])).toBe(false); // not carrying
   });
 
   it("passTarget picks the nearest eligible teammate", () => {
     const me = p("b", "blue", blueSpot);
     const potli = { ...loose(blueSpot), carrierId: "b" };
     const players = [me, p("far", "blue", near(blueSpot, 60)), p("close", "blue", near(blueSpot, 30))];
-    expect(passTarget(me, players, potli)?.id).toBe("close");
+    expect(passTarget(me, players, [potli])?.id).toBe("close");
   });
 });
 
@@ -120,31 +120,31 @@ describe("the smart button (D32: Unfreeze > Tag > Snatch > Grab)", () => {
   it("prefers unfreezing a teammate over tagging", () => {
     const me = p("L", "blue", blueSpot, { role: "leader" });
     const players = [me, p("m", "blue", near(blueSpot), { frozen: true }), p("g", "green", near(blueSpot, -40))];
-    expect(bestAction(me, players, loose({ x: 0, y: 0 }))?.kind).toBe("unfreeze");
+    expect(bestAction(me, players, [loose({ x: 0, y: 0 })])?.kind).toBe("unfreeze");
   });
 
   it("prefers tagging over grabbing", () => {
     const me = p("b", "blue", blueSpot);
     const players = [me, p("g", "green", near(blueSpot))];
-    expect(bestAction(me, players, loose(blueSpot))?.kind).toBe("tag");
+    expect(bestAction(me, players, [loose(blueSpot)])?.kind).toBe("tag");
   });
 
   it("offers Grab when standing on a loose potli and nothing else is possible", () => {
     const me = p("b", "blue", blueSpot);
-    expect(bestAction(me, [me], loose(blueSpot))).toEqual({ kind: "grab", targetId: "" });
+    expect(bestAction(me, [me], [loose(blueSpot)])).toEqual({ kind: "grab", targetId: "north" });
   });
 
   it("nothing to do -> null (button greys out)", () => {
     const me = p("b", "blue", blueSpot);
-    expect(bestAction(me, [me], loose({ x: 0, y: 0 }))).toBeNull();
+    expect(bestAction(me, [me], [loose({ x: 0, y: 0 })])).toBeNull();
   });
 
   it("server double-checks what the client asked for", () => {
     const me = p("b", "blue", greenSpot);
     const enemy = p("g", "green", near(greenSpot)); // enemy on the GREEN half
     const players = new Map([[me.id, me], [enemy.id, enemy]]);
-    expect(isActionAllowed(me, { kind: "tag", targetId: "g" }, players, loose())).toBe(false);
-    expect(isActionAllowed(me, { kind: "fly" as any, targetId: "g" }, players, loose())).toBe(false);
+    expect(isActionAllowed(me, { kind: "tag", targetId: "g" }, players, [loose()])).toBe(false);
+    expect(isActionAllowed(me, { kind: "fly" as any, targetId: "g" }, players, [loose()])).toBe(false);
   });
 });
 
@@ -166,9 +166,54 @@ describe("dens and the Leader speed bonus", () => {
     const leader = p("L", "blue", blueSpot, { role: "leader" });
     const mate = p("m", "blue", blueSpot);
     const leaderCarrying = { ...loose(), carrierId: "L" };
-    expect(speedMultiplier(leader, [leader, mate], loose())).toBe(1);
-    expect(speedMultiplier(mate, [leader, mate], { ...loose(), carrierId: "m" })).toBe(carry);
-    expect(speedMultiplier(leader, [leader, mate], leaderCarrying)).toBeCloseTo(carry * bonus);
-    expect(speedMultiplier(leader, [leader, { ...mate, frozen: true }], leaderCarrying)).toBe(carry);
+    expect(speedMultiplier(leader, [leader, mate], [loose()])).toBe(1);
+    expect(speedMultiplier(mate, [leader, mate], [{ ...loose(), carrierId: "m" }])).toBe(carry);
+    expect(speedMultiplier(leader, [leader, mate], [leaderCarrying])).toBeCloseTo(carry * bonus);
+    expect(speedMultiplier(leader, [leader, { ...mate, frozen: true }], [leaderCarrying])).toBe(carry);
+  });
+});
+
+describe("two potlis (D68)", () => {
+  const pot = (id: string, at: { x: number; y: number }, extra: Partial<RulePotli> = {}): RulePotli => ({
+    id,
+    ...at,
+    carrierId: "",
+    snatcherId: "",
+    ...extra,
+  });
+
+  it("one at a time: no grab or snatch while you carry one, and no passing to a full-handed mate", () => {
+    const me = p("b", "blue", blueSpot);
+    const pots = [pot("north", blueSpot, { carrierId: "b" }), pot("south", blueSpot)];
+    expect(canGrab(me, pots[1], pots)).toBe(false);
+    expect(bestAction(me, [me], pots)).toBeNull();
+
+    const mate = p("b2", "blue", near(blueSpot));
+    expect(canPass(me, mate, [pots[0], pot("south", blueSpot, { carrierId: "b2" })])).toBe(false);
+
+    const g = p("g", "green", near(blueSpot));
+    const gPots = [pot("north", blueSpot, { carrierId: "g" }), pot("south", blueSpot, { carrierId: "b" })];
+    expect(canSnatch(me, g, gPots[0], gPots)).toBe(false);
+  });
+
+  it("grab names which potli; the nearest grabbable one wins", () => {
+    const me = p("b", "blue", blueSpot);
+    const pots = [pot("north", near(blueSpot, 40)), pot("south", blueSpot)];
+    expect(bestAction(me, [me], pots)).toEqual({ kind: "grab", targetId: "south" });
+  });
+
+  it("a scored potli can't be grabbed by the team that scored it, but anyone else can", () => {
+    const scored = pot("north", greenSpot, { scoredBy: "blue" });
+    expect(canGrab(p("b", "blue", greenSpot), scored)).toBe(false);
+    expect(canGrab(p("g", "green", greenSpot), scored)).toBe(true);
+  });
+
+  it("the den is the attackers' turf: tag a defender inside your goal den", () => {
+    const den = MAP.dens.green;
+    const inside = { x: den.x + den.w / 2, y: den.y + den.h / 2 };
+    expect(canTag(p("b", "blue", near(inside)), p("g", "green", inside))).toBe(true);
+    // Just outside the den, on their own half, defenders are safe as before.
+    const outside = { x: den.x - 80, y: inside.y };
+    expect(canTag(p("b", "blue", near(outside)), p("g", "green", outside))).toBe(false);
   });
 });

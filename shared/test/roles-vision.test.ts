@@ -169,10 +169,10 @@ describe("spy", () => {
   });
 
   it("can pass silently to the real team; normal players can't pass to enemies", () => {
-    const potli = { x: 0, y: 0, carrierId: "s", snatcherId: "" };
-    expect(canPass(spy, base("g", "green", 1540), potli)).toBe(true);
+    const potli = { id: "north", x: 0, y: 0, carrierId: "s", snatcherId: "" };
+    expect(canPass(spy, base("g", "green", 1540), [potli])).toBe(true);
     const normal = base("n", "blue", 1500);
-    expect(canPass(normal, base("g", "green", 1540), { ...potli, carrierId: "n" })).toBe(false);
+    expect(canPass(normal, base("g", "green", 1540), [{ ...potli, carrierId: "n" }])).toBe(false);
   });
 });
 

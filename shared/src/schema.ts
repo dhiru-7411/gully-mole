@@ -99,6 +99,10 @@ export type PlayerState = SchemaType<typeof PlayerState>;
 /** The one object everyone fights over. */
 export const PotliState = schema(
   {
+    /** "north" | "south" (D68: two potlis). */
+    id: t.string().default(""),
+    /** Team that scored it into its goal den ("" = in play). Anyone else can grab it back out. */
+    scoredBy: t.string().default(""),
     x: t.number().default(0),
     y: t.number().default(0),
     /** Player id carrying it, or "" when it's lying loose. */
@@ -221,8 +225,12 @@ export const GameState = schema(
     easyBots: t.boolean().default(true),
     /** Keyed by player id. Filtered per client: you only receive who you can see. */
     players: t.map(PlayerState).view(),
-    potli: t.ref(PotliState).default(() => new PotliState()).view(),
+    /** The two potlis by id (D68). Filtered per client like players: you get the ones you can see. */
+    potlis: t.map(PotliState).view(),
     footprints: t.map(Footprint).view(),
+    /** Public score (D68): how many potlis each team has sitting in its goal den right now. */
+    scoredBlue: t.uint8().default(0),
+    scoredGreen: t.uint8().default(0),
     /** How many players are in the room (the players map is filtered, so the lobby count lives here). */
     playerCount: t.uint8().default(0),
     /** Whole seconds left in the round (paused during huddles). */

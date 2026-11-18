@@ -98,8 +98,32 @@ describe("map data", () => {
     }
   });
 
-  it("nothing blocks the potli's starting spot", () => {
+  it("nothing blocks either potli's starting spot (D68)", () => {
     expect(isBlocked(MAP.middleZone.x, MAP.middleZone.y, R)).toBe(false);
+    expect(MAP.potliStarts.map((s) => s.id)).toEqual(["north", "south"]);
+    for (const s of MAP.potliStarts) expect(isBlocked(s.x, s.y, R), s.id).toBe(false);
+  });
+
+  it("the two potli starts are each other turned 180°, on the half line (fair, D68)", () => {
+    const [n, s] = MAP.potliStarts;
+    expect(n.x).toBe(MAP.halfLine);
+    expect(mirrorPoint(n)).toEqual({ x: s.x, y: s.y });
+  });
+
+  it("there's no straight run from either potli start to either den (D31, D68)", () => {
+    for (const start of MAP.potliStarts) {
+      for (const team of ["blue", "green"] as const) {
+        const den = MAP.dens[team];
+        const mouthX = team === "blue" ? den.x + den.w + R : den.x - R;
+        for (let y = den.y + R; y <= den.y + den.h - R; y += 10) {
+          let blocked = false;
+          for (let t = 0; t <= 1 && !blocked; t += 0.005) {
+            blocked = isBlocked(start.x + (mouthX - start.x) * t, start.y + (y - start.y) * t, R);
+          }
+          expect(blocked, `${start.id} -> ${team} den, row y=${y}`).toBe(true);
+        }
+      }
+    }
   });
 
   it("a blob can walk from each den to the middle, the other den and both fireplaces", () => {

@@ -140,9 +140,9 @@ describe("secret unfreeze and the silent pass", () => {
     scatter(); // all Blue genuine members are in the Blue den, far away
     place("b2", GREEN_SIDE);
     place("g3", GREEN_SIDE, 40);
-    state.potli.carrierId = "b2";
+    state.potlis.get("north")!.carrierId = "b2";
     expect(round.pass("b2")).toBe(true);
-    expect(state.potli.carrierId).toBe("g3");
+    expect(state.potlis.get("north")!.carrierId).toBe("g3");
     expect(P("b2").exposed).toBe(false);
   });
 
@@ -152,7 +152,7 @@ describe("secret unfreeze and the silent pass", () => {
     place("b2", GREEN_SIDE);
     place("g3", GREEN_SIDE, 40);
     place("b3", GREEN_SIDE, 0, -110); // a genuine Blue player watching, in the open
-    state.potli.carrierId = "b2";
+    state.potlis.get("north")!.carrierId = "b2";
     expect(round.pass("b2")).toBe(true);
     expect(P("b2").exposed).toBe(true);
     expect(round.events.some((e) => e.type === "announce" && e.text.includes("SPY"))).toBe(true);
@@ -160,7 +160,7 @@ describe("secret unfreeze and the silent pass", () => {
 
   it("a spy carrying the potli into the goal never scores (D2)", () => {
     const { state, P, ticks } = setup();
-    state.potli.carrierId = "b2"; // sits in Blue -> Blue's goal is the Green den
+    state.potlis.get("north")!.carrierId = "b2"; // sits in Blue -> Blue's goal is the Green den
     P("b2").x = MAP.spawns.green[4].x;
     P("b2").y = MAP.spawns.green[4].y;
     ticks(0.1);

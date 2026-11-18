@@ -33,10 +33,23 @@ export interface RulePlayer {
 }
 
 export interface RulePotli {
+  /** "north" | "south" (D68). */
+  id: string;
+  /** Team that scored it into its goal den, or "". */
+  scoredBy?: string;
   x: number;
   y: number;
   carrierId: string;
   snatcherId: string;
+}
+
+/** Both potlis (D68), as any iterable (a MapSchema's values, an array…). */
+export type Potlis = Iterable<RulePotli>;
+
+/** The potli this player is carrying, if any (one at a time, D68). */
+export function carrying<T extends RulePotli>(me: { id: string }, potlis: Iterable<T>): T | undefined {
+  for (const p of potlis) if (p.carrierId === me.id) return p;
+  return undefined;
 }
 
 /** The big smart button (D32). */
@@ -83,7 +96,8 @@ export function canTag(me: RulePlayer, target: RulePlayer): boolean {
     !myOwnSpy &&
     target.team !== me.team &&
     target.team !== "" &&
-    halfAt(target.x) === me.team &&
+    // Your half, or inside your goal den: the den is the attackers' turf (D68).
+    (halfAt(target.x) === me.team || (me.team !== "" && inDen(enemyOf(me.team as Team), target))) &&
     dist(me, target) <= D.tag
   );
 }
@@ -100,15 +114,22 @@ export function canUnfreeze(me: RulePlayer, target: RulePlayer): boolean {
   );
 }
 
-/** Grab: the potli is lying loose and you're standing on it (D33). */
-export function canGrab(me: RulePlayer, potli: RulePotli): boolean {
-  return !me.frozen && potli.carrierId === "" && dist(me, potli) <= D.grab;
-}
-
-/** Snatch: start the countdown on an enemy carrier beside you (any half). */
-export function canSnatch(me: RulePlayer, carrier: RulePlayer, potli: RulePotli): boolean {
+/** Grab: a loose potli is at your feet and your hands are free (D33, D68). */
+export function canGrab(me: RulePlayer, potli: RulePotli, potlis: Potlis = [potli]): boolean {
   return (
     !me.frozen &&
+    !carrying(me, potlis) && // one at a time (D68)
+    potli.carrierId === "" &&
+    potli.scoredBy !== me.team && // you can't take your own scored potli back out (D68)
+    dist(me, potli) <= D.grab
+  );
+}
+
+/** Snatch: start the countdown on an enemy carrier beside you (any half), hands free. */
+export function canSnatch(me: RulePlayer, carrier: RulePlayer, potli: RulePotli, potlis: Potlis = [potli]): boolean {
+  return (
+    !me.frozen &&
+    !carrying(me, potlis) &&
     potli.carrierId === carrier.id &&
     potli.snatcherId === "" &&
     carrier.team !== me.team &&
@@ -117,15 +138,17 @@ export function canSnatch(me: RulePlayer, carrier: RulePlayer, potli: RulePotli)
 }
 
 /**
- * Pass: you carry the potli and a free player is right beside you who is
- * either a teammate, or (spy only) a player of your REAL team: the silent pass.
+ * Pass: you carry a potli and a free player with empty hands is right beside
+ * you: a teammate, or (spy only) a player of your REAL team (the silent pass).
  */
-export function canPass(me: RulePlayer, mate: RulePlayer, potli: RulePotli): boolean {
+export function canPass(me: RulePlayer, mate: RulePlayer, potlis: Potlis): boolean {
+  const list = [...potlis];
   const sameSide = mate.team === me.team;
   const silent = isSpy(me) && realTeamOf(mate) === realTeamOf(me);
   return (
     !me.frozen &&
-    potli.carrierId === me.id &&
+    !!carrying(me, list) &&
+    !carrying(mate, list) &&
     mate.id !== me.id &&
     (sameSide || silent) &&
     !mate.frozen &&
@@ -152,9 +175,10 @@ function nearest(me: RulePlayer, players: Iterable<RulePlayer>, check: (p: RuleP
  * What the big button does right now. Priority (D32): Unfreeze > Tag > Snatch > Grab.
  * Returns null when nothing is possible (the button greys out).
  */
-export function bestAction(me: RulePlayer, players: Iterable<RulePlayer>, potli: RulePotli): Action | null {
+export function bestAction(me: RulePlayer, players: Iterable<RulePlayer>, potlis: Potlis): Action | null {
   if (me.frozen) return null;
   const list = [...players];
+  const pots = [...potlis];
 
   const frozenMate = nearest(me, list, (p) => canUnfreeze(me, p));
   if (frozenMate) return { kind: "unfreeze", targetId: frozenMate.id };
@@ -162,16 +186,21 @@ export function bestAction(me: RulePlayer, players: Iterable<RulePlayer>, potli:
   const enemy = nearest(me, list, (p) => canTag(me, p));
   if (enemy) return { kind: "tag", targetId: enemy.id };
 
-  const carrier = list.find((p) => p.id === potli.carrierId);
-  if (carrier && canSnatch(me, carrier, potli)) return { kind: "snatch", targetId: carrier.id };
+  for (const potli of pots) {
+    const carrier = list.find((p) => p.id === potli.carrierId);
+    if (carrier && canSnatch(me, carrier, potli, pots)) return { kind: "snatch", targetId: carrier.id };
+  }
 
-  if (canGrab(me, potli)) return { kind: "grab", targetId: "" };
+  // Grab names WHICH potli (D68).
+  const grabbable = pots.filter((potli) => canGrab(me, potli, pots)).sort((a, b) => dist(me, a) - dist(me, b))[0];
+  if (grabbable) return { kind: "grab", targetId: grabbable.id };
   return null;
 }
 
 /** Who a Pass would go to (nearest eligible), or null. */
-export function passTarget(me: RulePlayer, players: Iterable<RulePlayer>, potli: RulePotli): RulePlayer | null {
-  return nearest(me, players, (p) => canPass(me, p, potli));
+export function passTarget(me: RulePlayer, players: Iterable<RulePlayer>, potlis: Potlis): RulePlayer | null {
+  const pots = [...potlis];
+  return nearest(me, players, (p) => canPass(me, p, pots));
 }
 
 /** Is this big-button action allowed right now? Server-side check. */
@@ -179,18 +208,23 @@ export function isActionAllowed(
   me: RulePlayer,
   action: Action,
   players: Map<string, RulePlayer>,
-  potli: RulePotli,
+  potlis: Potlis,
 ): boolean {
+  const pots = [...potlis];
   const target = players.get(action.targetId);
   switch (action.kind) {
     case "unfreeze":
       return !!target && canUnfreeze(me, target);
     case "tag":
       return !!target && canTag(me, target);
-    case "snatch":
-      return !!target && canSnatch(me, target, potli);
-    case "grab":
-      return canGrab(me, potli);
+    case "snatch": {
+      const potli = target ? carrying(target, pots) : undefined;
+      return !!target && !!potli && canSnatch(me, target, potli, pots);
+    }
+    case "grab": {
+      const potli = pots.find((p) => p.id === action.targetId);
+      return !!potli && canGrab(me, potli, pots);
+    }
     default:
       return false;
   }
@@ -333,10 +367,10 @@ export function nearFireplace(p: { x: number; y: number }): boolean {
  * - GDD: a Leader carrying it runs faster, but only if no teammate is frozen;
  * - dragging a shamed Detective halves your speed (D9).
  */
-export function speedMultiplier(me: RulePlayer, players: Iterable<RulePlayer>, potli: RulePotli): number {
+export function speedMultiplier(me: RulePlayer, players: Iterable<RulePlayer>, potlis: Potlis): number {
   const list = [...players];
   const drag = list.some((p) => p.draggedBy === me.id) ? CONFIG.movement.dragSpeedMultiplier : 1;
-  if (potli.carrierId !== me.id) return drag;
+  if (!carrying(me, potlis)) return drag;
   const carry = CONFIG.movement.carrierSpeedMultiplier * drag;
   if (!isLeader(me)) return carry;
   for (const p of list) if (p.team === me.team && p.frozen) return carry;

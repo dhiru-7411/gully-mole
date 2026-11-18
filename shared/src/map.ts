@@ -101,6 +101,14 @@ export const MAP = {
   halfLine: WORLD.width / 2,
   dens: { blue: blueDen, green: mirrorRect(blueDen) } as Record<Team, Rect>,
   middleZone: { x: WORLD.width / 2, y: WORLD.height / 2, r: 150 * S } as Circle,
+  /**
+   * D68: two potlis, on the half line, one north and one south of the centre.
+   * Each is the other turned 180°, so the start is fair.
+   */
+  potliStarts: [
+    { id: "north", x: WORLD.width / 2, y: WORLD.height / 2 - 75 * S },
+    { id: "south", x: WORLD.width / 2, y: WORLD.height / 2 + 75 * S },
+  ] as { id: string; x: number; y: number }[],
   spawns: { blue: blueSpawns, green: blueSpawns.map(mirrorPoint) } as Record<Team, Point[]>,
   rects: [...blueRects, ...blueRects.map(mirrorRect)],
   circles: [...blueCircles, ...blueCircles.map(mirrorCircle)],

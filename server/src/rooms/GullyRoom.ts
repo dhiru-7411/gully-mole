@@ -361,8 +361,11 @@ export class GullyRoom extends Room<{ state: GameState; input: MoveInput }> {
         icedHand: false,
       });
     }
-    this.state.potli.carrierId = "";
-    this.state.potli.snatcherId = "";
+    for (const potli of this.state.potlis.values()) {
+      Object.assign(potli, { carrierId: "", snatcherId: "", snatchLeft: 0, scoredBy: "" });
+    }
+    this.state.scoredBlue = 0;
+    this.state.scoredGreen = 0;
     this.state.footprints.clear();
     this.huddles.close();
     this.awards.reset();
