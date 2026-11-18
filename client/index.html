@@ -42,6 +42,10 @@
           <button id="btn-add-bot" class="btn small">+1 bot</button>
           <button id="btn-fill-bots" class="btn small">Fill with bots</button>
         </div>
+        <details id="award-settings" class="end-details hidden">
+          <summary>Extra awards (on by default)</summary>
+          <div id="award-checks" class="award-checks"></div>
+        </details>
         <label id="easy-bots-row" class="check hidden">
           <input id="easy-bots" type="checkbox" checked />
           <span>Easy bots (they never grab the potli, so you can test roles)</span>
@@ -105,7 +109,31 @@
         <div class="end-card">
           <h2 id="end-title">Blue wins!</h2>
           <p id="end-reason"></p>
+
+          <!-- The reveal (GDD): scores, who the spies and Detectives were, key moments -->
+          <div id="end-scores" class="end-scores"></div>
           <p id="end-reveal" class="end-reveal"></p>
+          <details class="end-details">
+            <summary>Stats</summary>
+            <table id="end-stats" class="end-stats"></table>
+          </details>
+          <details class="end-details">
+            <summary>Key moments</summary>
+            <ul id="end-moments" class="end-moments"></ul>
+          </details>
+
+          <!-- Peer awards: give 3–5 to opponents -->
+          <section id="awards-panel" class="awards-panel hidden">
+            <h3>Hand out awards <span id="awards-time" class="awards-time"></span></h3>
+            <p class="hint">Give 3–5 awards to opponents. Every award is a point, even the roasts. Pick what the stats show for an honesty bonus.</p>
+            <div id="awards-list" class="awards-list"></div>
+            <button id="btn-submit-awards" class="btn primary" type="button" disabled>Hand out awards</button>
+          </section>
+          <p id="awards-status" class="hint hidden"></p>
+
+          <!-- Results -->
+          <section id="awards-results" class="awards-results hidden"></section>
+
           <button id="btn-back" class="btn primary" type="button">Back to lobby</button>
           <p id="end-wait" class="hint">Waiting for the host…</p>
         </div>

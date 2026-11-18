@@ -5,6 +5,7 @@
  * at most 20 players that's instant and much simpler than patching the DOM.
  */
 import {
+  AWARDS,
   CONFIG,
   ClientMsg,
   Phase,
@@ -160,6 +161,7 @@ function render() {
   ui.hostControls.classList.toggle("hidden", !isHost);
   ui.botControls.classList.toggle("hidden", !(isHost && s.botsAllowed));
   $("easy-bots-row").classList.toggle("hidden", !(isHost && s.botsAllowed));
+  renderAwardSettings(isHost, [...s.extraAwards]);
   $<HTMLInputElement>("easy-bots").checked = s.easyBots;
   ui.waitingHost.classList.toggle("hidden", isHost);
   ui.btnStart.disabled = s.playerCount < CONFIG.lobby.minPlayers;
@@ -212,6 +214,35 @@ ui.roomCode.addEventListener("click", async () => {
     /* user cancelled share sheet */
   }
 });
+
+/** Host only: switch the GDD's "settings" awards on/off for the next rounds. */
+let awardSettingsKey = "";
+function renderAwardSettings(isHost: boolean, on: string[]) {
+  $("award-settings").classList.toggle("hidden", !isHost);
+  const key = on.join(",");
+  if (!isHost || key === awardSettingsKey) return;
+  awardSettingsKey = key;
+  const box = $("award-checks");
+  box.replaceChildren(
+    ...AWARDS.filter((a) => a.set === "settings").map((a) => {
+      const label = document.createElement("label");
+      label.className = "check";
+      const input = document.createElement("input");
+      input.type = "checkbox";
+      input.checked = on.includes(a.id);
+      input.addEventListener("change", () => {
+        const next = new Set(on);
+        if (input.checked) next.add(a.id);
+        else next.delete(a.id);
+        room?.send(ClientMsg.SetExtraAwards, [...next]);
+      });
+      const text = document.createElement("span");
+      text.textContent = `${a.name}${a.situational ? " (only if it happens)" : ""}`;
+      label.append(input, text);
+      return label;
+    }),
+  );
+}
 
 /** A controls hint that fades after a few seconds (the team badge is kept up to date by the HUD). */
 function showHud() {

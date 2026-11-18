@@ -21,8 +21,10 @@ import {
   Phase,
   PlayerState,
   Role,
+  SETTINGS_AWARD_IDS,
   SecretRole,
   ServerEvent,
+  SummaryState,
   ServerMsg,
   WHISPER_MAX_LENGTH,
   canStart,
@@ -41,6 +43,8 @@ import { BotBrain } from "../bots";
 import { Round } from "../game/round";
 import { ViewSync } from "../views";
 import { Huddles } from "../game/huddle";
+import { AwardsPhase } from "../game/awards";
+import { ArraySchema } from "@colyseus/schema";
 
 /** Codes in use on this server process (one process on Render's free tier). */
 const codesInUse = new Set<string>();
@@ -62,6 +66,7 @@ export class GullyRoom extends Room<{ state: GameState; input: MoveInput }> {
   });
 
   private round = new Round(this.state);
+  private awards = new AwardsPhase(this.state, this.round.stats);
   private huddles = new Huddles(this.state);
   private views = new ViewSync(this.state);
   /** Anti-spam timestamps (ms) per player. */
@@ -85,6 +90,15 @@ export class GullyRoom extends Room<{ state: GameState; input: MoveInput }> {
     [ClientMsg.EndHuddle]: (client: Client) => this.huddles.end(client.sessionId),
     [ClientMsg.HuddleChat]: (client: Client, text?: unknown) => this.handleHuddleChat(client, text),
     [ClientMsg.QuickMessage]: (client: Client, index?: unknown) => this.handleQuickMessage(client, index),
+    [ClientMsg.SubmitAwards]: (client: Client, picks?: unknown) => {
+      const error = this.awards.submit(client.sessionId, picks);
+      if (error) this.notice(client, error);
+    },
+    [ClientMsg.SetExtraAwards]: (client: Client, ids?: unknown) => {
+      if (!this.isHost(client) || this.state.phase !== Phase.Lobby || !Array.isArray(ids)) return;
+      const on = ids.filter((id): id is string => typeof id === "string" && SETTINGS_AWARD_IDS.includes(id));
+      this.state.extraAwards = new ArraySchema<string>(...new Set(on));
+    },
     [ClientMsg.Whisper]: (client: Client, text?: unknown) => this.handleWhisper(client, text),
     [ClientMsg.BackToLobby]: (client: Client) => this.handleBackToLobby(client),
     [ClientMsg.SetEasyBots]: (client: Client, on?: unknown) => {
@@ -149,7 +163,13 @@ export class GullyRoom extends Room<{ state: GameState; input: MoveInput }> {
       }
     }
 
+    const wasPlaying = this.state.phase === Phase.Playing;
     this.round.tick(ctx.dt);
+    // Round just ended: open the awards (GDD "Peer awards").
+    if (wasPlaying && this.state.phase === Phase.Ended) {
+      this.awards.open([...this.state.players.values()].filter((p) => !p.isBot && p.connected).map((p) => p.id));
+    }
+    if (this.state.phase === Phase.Ended) this.awards.tick(ctx.dt);
     this.deliverEvents();
     this.views.update(this.clients);
   }
@@ -270,6 +290,7 @@ export class GullyRoom extends Room<{ state: GameState; input: MoveInput }> {
     recent.push(now);
     this.lastChat.set(me.id, recent);
     this.sendToTeam(me.team, me.id, me.nickname, clean);
+    this.round.stats.p(me.id).chats++; // for "Professional Yapper"
   }
 
   /** One-tap message: to everyone sitting in your team, any time in a round (frozen too, D10). */
@@ -343,6 +364,8 @@ export class GullyRoom extends Room<{ state: GameState; input: MoveInput }> {
     this.state.potli.snatcherId = "";
     this.state.footprints.clear();
     this.huddles.close();
+    this.awards.reset();
+    this.state.summary = new SummaryState();
     this.state.huddlesLeftBlue = 0;
     this.state.huddlesLeftGreen = 0;
     this.state.winner = "";

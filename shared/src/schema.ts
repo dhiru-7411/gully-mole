@@ -10,7 +10,7 @@
  *  - TAG.NEAR fields (the spy's iced hand): only to players standing close by.
  * So a player can never find the spy by inspecting network traffic.
  */
-import { schema, t, type SchemaType } from "@colyseus/schema";
+import { ArraySchema, schema, t, type SchemaType } from "@colyseus/schema";
 
 /** View tags (powers of two). */
 export const TAG = {
@@ -136,6 +136,64 @@ export const HuddleState = schema(
 );
 export type HuddleState = SchemaType<typeof HuddleState>;
 
+// ---------------------------------------------------------------- M5: after a round
+
+/** One row of the stats table: a factor and each team's count. */
+export const FactorRow = schema(
+  { key: t.string(), label: t.string(), sign: t.int8(), blue: t.number(), green: t.number() },
+  "FactorRow",
+);
+export type FactorRow = SchemaType<typeof FactorRow>;
+
+/** One award someone handed out. */
+export const AwardGiven = schema(
+  { awardId: t.string(), fromId: t.string(), fromName: t.string(), toId: t.string(), toName: t.string() },
+  "AwardGiven",
+);
+export type AwardGiven = SchemaType<typeof AwardGiven>;
+
+/** A player's award points: received + honesty bonus. */
+export const PointsRow = schema(
+  {
+    id: t.string(),
+    name: t.string(),
+    team: t.string(),
+    received: t.uint8(),
+    honesty: t.uint8(),
+    total: t.uint8(),
+  },
+  "PointsRow",
+);
+export type PointsRow = SchemaType<typeof PointsRow>;
+
+/**
+ * The end-of-round summary (GDD "The reveal" + "Peer awards"). Only filled in
+ * once the round is over, when everything is public anyway.
+ */
+export const SummaryState = schema(
+  {
+    blueScore: t.number().default(0),
+    greenScore: t.number().default(0),
+    factors: t.array(FactorRow),
+    /** Key moments, oldest first, e.g. "2:14 Pappu arrested Golu: a SPY!". */
+    moments: t.array("string"),
+    /** Awards on offer this round (situational ones only if they happened). */
+    awardIds: t.array("string"),
+    awardsOpen: t.boolean().default(false),
+    awardsSecondsLeft: t.uint8().default(0),
+    /** Humans who have handed out their awards / who still can. */
+    submittedIds: t.array("string"),
+    voters: t.uint8().default(0),
+    /** Filled once voting closes. */
+    results: t.array(AwardGiven),
+    points: t.array(PointsRow),
+    mvpId: t.string().default(""),
+    mvpName: t.string().default(""),
+  },
+  "SummaryState",
+);
+export type SummaryState = SchemaType<typeof SummaryState>;
+
 /**
  * One input frame from a client: joystick/keyboard axes, -127..127 each.
  * The server clamps them (never trust the wire) and runs one movement step per
@@ -175,6 +233,9 @@ export const GameState = schema(
     winner: t.string().default(""),
     /** After a round: "home" | "wipeout" | "time". */
     endReason: t.string().default(""),
+    summary: t.ref(SummaryState).default(() => new SummaryState()),
+    /** Host's lobby setting: which "settings" awards are switched on (default: all). */
+    extraAwards: t.array("string").default(() => new ArraySchema<string>("delulu", "fumbled", "maincharacter", "yapper", "caught4k")),
   },
   "GameState",
 );

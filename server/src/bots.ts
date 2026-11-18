@@ -103,9 +103,12 @@ export class BotBrain {
         );
       if (roleAct?.kind === "free" && unwatched("")) d.roleAction = roleAct;
       if (roleAct?.kind === "ice" && unwatched(roleAct.targetId) && this.random() < 0.03) d.roleAction = roleAct;
-      // Fake loyalty only goes so far: usually don't tag our real teammates.
+      // Fake loyalty (GDD) only when it buys cover: freeze a real teammate ONLY if a
+      // fake teammate is watching, and even then only sometimes. Never when unwatched.
       const tagTarget = d.action?.kind === "tag" ? s.players.get(d.action.targetId) : null;
-      if (tagTarget && tagTarget.realTeam === me.realTeam && this.random() < 0.7) d.action = undefined;
+      if (tagTarget && tagTarget.realTeam === me.realTeam && (unwatched("") || this.random() < 0.5)) {
+        d.action = undefined;
+      }
 
       // Carrying as a spy: we can never score (D2). Get it to our real team.
       if (carrier?.id === me.id) {

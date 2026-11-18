@@ -41,6 +41,8 @@ import {
   type Team,
 } from "@gully/shared";
 
+import { RoundStats } from "./stats";
+
 export type RoundEvent =
   | { type: "announce"; text: string }
   | { type: "frozenPing"; to: string; x: number; y: number; name: string };
@@ -127,7 +129,13 @@ export class Round {
     }
     this.secondAcc = 0;
     this.events = [];
+    this.stats.reset();
+    this.anyGrab = false;
   }
+
+  /** M5: automatic stats for the end-of-round reveal and timeout winner. */
+  readonly stats = new RoundStats();
+  private anyGrab = false;
 
   // ----------------------------------------------------------- actions
 
@@ -141,9 +149,14 @@ export class Round {
     const target = s.players.get(action.targetId);
     switch (action.kind) {
       case "tag":
+        this.stats.p(me.id).freezes++;
+        if (target!.realTeam !== me.realTeam) this.stats.add(me.realTeam, "enemiesFrozen");
+        this.stats.add(target!.realTeam, "ownPlayersFrozen");
         this.freeze(target!, Freeze.Ice);
         break;
       case "unfreeze":
+        this.stats.p(me.id).lampUnfreezes++;
+        this.stats.add(me.realTeam, "lampUnfreezes");
         this.unfreeze(target!);
         break;
       case "snatch":
@@ -152,6 +165,9 @@ export class Round {
         break;
       case "grab":
         s.potli.carrierId = me.id;
+        this.stats.p(me.id).grabs++;
+        if (!this.anyGrab) this.stats.moment(`${me.nickname} grabbed the potli first.`);
+        this.anyGrab = true;
         break;
     }
     return true;
@@ -171,12 +187,16 @@ export class Round {
         break;
       case "ice":
         // Looks exactly like a normal tag (GDD), but costs the spy an iced hand + footprints.
+        this.stats.p(me.id).ices++;
+        this.stats.add(target.realTeam, "ownPlayersFrozen");
         this.freeze(target, Freeze.Ice);
         me.icedHand = true;
         this.handTimers.set(me.id, CONFIG.timers.frozenHandSec);
         this.trails.set(me.id, { left: CONFIG.footprints.trailSec, next: 0 });
         break;
       case "free":
+        this.stats.p(me.id).frees++;
+        this.stats.add(me.realTeam, "spySecretUnfreezes");
         this.unfreeze(target);
         break;
       case "drag":
@@ -199,7 +219,13 @@ export class Round {
     s.potli.carrierId = mate.id;
     this.cancelSnatch(); // a hand-off beats the countdown
 
+    if (mate.team === me.team && mate.realTeam === me.realTeam) {
+      this.stats.p(me.id).handOffs++;
+      this.stats.add(me.realTeam, "handOffs");
+    }
     if (mate.team !== me.team) {
+      this.stats.p(me.id).silentPasses++;
+      this.stats.add(me.realTeam, "spySilentPasses");
       // Silent pass (spy -> real team). If a fake teammate sees it, the spy is exposed.
       const witness = [...s.players.values()].find(
         (w) =>
@@ -211,6 +237,7 @@ export class Round {
       );
       if (witness && !me.exposed) {
         me.exposed = true;
+        this.stats.caught.add(me.id);
         this.announce(`${witness.nickname} saw ${me.nickname} pass the potli to ${names[mate.team]}. ${me.nickname} is a SPY!`);
       }
     }
@@ -238,6 +265,7 @@ export class Round {
     this.tickLeaders(dt);
     this.tickSpies(dt);
     this.tickDrags();
+    this.stats.tick(dt, s);
 
     // The potli moves with its carrier.
     const carrier = s.players.get(s.potli.carrierId);
@@ -365,6 +393,10 @@ export class Round {
     s.potli.snatchLeft = Math.max(0, s.potli.snatchLeft - dt);
     if (s.potli.snatchLeft === 0) {
       s.potli.carrierId = snatcher.id;
+      this.stats.p(snatcher.id).snatches++;
+      this.stats.add(snatcher.realTeam, "objectSnatched");
+      this.stats.add(carrier.realTeam, "objectLostToEnemy");
+      this.stats.moment(`${snatcher.nickname} snatched the potli from ${carrier.nickname}.`);
       this.cancelSnatch();
     }
   }
@@ -387,12 +419,21 @@ export class Round {
       }
     }
 
-    // Until M5's stats exist, a timed-out round is a draw (D37).
-    if (s.timeLeft === 0) return this.end("draw", "time");
+    // Time's up: the better automatic stats score wins (GDD), decided in end().
+    if (s.timeLeft === 0) return this.end("", "time");
   }
 
   private end(winner: string, reason: string) {
     const s = this.state;
+    if (reason === "home") this.stats.moment(`${names[winner]} scored!`);
+    if (reason === "wipeout") this.stats.moment(`${names[winner]} froze the whole other team.`);
+    if (reason === "time") this.stats.moment("Time ran out.");
+    this.stats.finish(s); // fills state.summary (scores, factors, moments, awards on offer)
+    if (reason === "time") {
+      const b = s.summary.blueScore;
+      const g = s.summary.greenScore;
+      winner = b > g ? "blue" : g > b ? "green" : "draw";
+    }
     s.winner = winner;
     s.endReason = reason;
     s.phase = Phase.Ended;
@@ -403,6 +444,9 @@ export class Round {
 
   private arrest(det: PlayerState, suspect: PlayerState) {
     if (suspect.secretRole === SecretRole.Spy) {
+      this.stats.p(det.id).correctArrests++;
+      this.stats.add(det.realTeam, "correctArrest");
+      this.stats.caught.add(suspect.id);
       suspect.exposed = true;
       this.freeze(suspect, Freeze.Out);
       this.announce(
@@ -412,6 +456,8 @@ export class Round {
     }
     const wrong = (this.wrongArrests.get(det.id) ?? 0) + 1;
     this.wrongArrests.set(det.id, wrong);
+    this.stats.p(det.id).wrongArrests++;
+    this.stats.add(det.realTeam, "wrongArrest");
     if (wrong >= 2) {
       this.freeze(det, Freeze.Out);
       this.announce(`${det.nickname} arrested ${suspect.nickname}, who is innocent. Second mistake: ${det.nickname} is Out!`);
@@ -431,6 +477,7 @@ export class Round {
     p.protected = false;
     // GDD: a frozen carrier drops the potli where they stand.
     if (s.potli.carrierId === p.id) {
+      this.stats.noteFrozenCarrier(p);
       s.potli.carrierId = "";
       s.potli.x = p.x;
       s.potli.y = p.y;
@@ -473,6 +520,7 @@ export class Round {
   }
 
   private announce(text: string) {
+    this.stats.moment(text); // every announcement is a key moment for the reveal
     this.events.push({ type: "announce", text });
   }
 }
