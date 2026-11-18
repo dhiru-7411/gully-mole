@@ -49,14 +49,19 @@ function setup() {
 }
 
 describe("round setup", () => {
-  it("one Leader per team, potli in the middle, timer from the GDD formula", () => {
+  it("one Leader per team, two potlis on the half line (north + south), timer from the GDD formula", () => {
     const state = new GameState();
     for (let i = 0; i < 9; i++) state.players.set(`p${i}`, new PlayerState({ id: `p${i}`, nickname: `p${i}` }));
     new Round(state).start();
     const leaders = [...state.players.values()].filter((p) => p.role === "leader");
     expect(leaders.map((l) => l.team).sort()).toEqual(["blue", "green"]);
-    expect(state.potli.x).toBe(MAP.middleZone.x);
-    expect(state.potli.carrierId).toBe("");
+    const north = state.potlis.get("north")!;
+    const south = state.potlis.get("south")!;
+    expect(north.x).toBe(MAP.halfLine);
+    expect(south.x).toBe(MAP.halfLine);
+    expect(north.y).toBeLessThan(MAP.middleZone.y);
+    expect(south.y).toBeGreaterThan(MAP.middleZone.y);
+    expect(north.carrierId + south.carrierId + north.scoredBy + south.scoredBy).toBe("");
     expect(state.timeLeft).toBe(roundDurationSeconds(9));
   });
 });
@@ -81,12 +86,12 @@ describe("tagging and freezing", () => {
   it("a frozen carrier drops the potli where they stand", () => {
     const { state, round, P, place, ticks } = setup();
     place("g1", BLUE_SIDE, 40);
-    state.potli.carrierId = "g1";
+    state.potlis.get("north")!.carrierId = "g1";
     ticks(0.1);
     place("b1", BLUE_SIDE);
     round.act("b1", { kind: "tag", targetId: "g1" });
-    expect(state.potli.carrierId).toBe("");
-    expect(state.potli.x).toBeCloseTo(P("g1").x);
+    expect(state.potlis.get("north")!.carrierId).toBe("");
+    expect(state.potlis.get("north")!.x).toBeCloseTo(P("g1").x);
   });
 });
 
@@ -137,46 +142,46 @@ describe("the Leader's fire lamp", () => {
 describe("grab, pass, snatch", () => {
   it("grab a loose potli by pressing the button on it (D33)", () => {
     const { state, round, place } = setup();
-    place("b1", MAP.middleZone);
-    expect(round.act("b1", { kind: "grab", targetId: "" })).toBe(true);
-    expect(state.potli.carrierId).toBe("b1");
+    place("b1", MAP.potliStarts[0]); // the north potli
+    expect(round.act("b1", { kind: "grab", targetId: "north" })).toBe(true);
+    expect(state.potlis.get("north")!.carrierId).toBe("b1");
   });
 
   it("pass only to a teammate right beside you", () => {
     const { state, round, place } = setup();
     place("b1", BLUE_SIDE);
     place("b2", BLUE_SIDE, 300);
-    state.potli.carrierId = "b1";
+    state.potlis.get("north")!.carrierId = "b1";
     expect(round.pass("b1")).toBe(false);
     place("b2", BLUE_SIDE, 40);
     expect(round.pass("b1")).toBe(true);
-    expect(state.potli.carrierId).toBe("b2");
+    expect(state.potlis.get("north")!.carrierId).toBe("b2");
   });
 
   it("snatch takes the full countdown, then the potli changes hands", () => {
     const { state, round, place, ticks } = setup();
     place("b1", GREEN_SIDE);
     place("g1", GREEN_SIDE, 40);
-    state.potli.carrierId = "b1";
+    state.potlis.get("north")!.carrierId = "b1";
     expect(round.act("g1", { kind: "snatch", targetId: "b1" })).toBe(true);
     ticks(CONFIG.timers.snatchCountdownSec - 0.5);
-    expect(state.potli.carrierId).toBe("b1");
+    expect(state.potlis.get("north")!.carrierId).toBe("b1");
     ticks(0.6);
-    expect(state.potli.carrierId).toBe("g1");
+    expect(state.potlis.get("north")!.carrierId).toBe("g1");
   });
 
   it("running away cancels the snatch", () => {
     const { state, round, place, ticks } = setup();
     place("b1", GREEN_SIDE);
     place("g1", GREEN_SIDE, 40);
-    state.potli.carrierId = "b1";
+    state.potlis.get("north")!.carrierId = "b1";
     round.act("g1", { kind: "snatch", targetId: "b1" });
     ticks(1);
     place("b1", GREEN_SIDE, 300);
     ticks(0.1);
-    expect(state.potli.snatcherId).toBe("");
+    expect(state.potlis.get("north")!.snatcherId).toBe("");
     ticks(3);
-    expect(state.potli.carrierId).toBe("b1");
+    expect(state.potlis.get("north")!.carrierId).toBe("b1");
   });
 
   it("passing during the countdown beats the snatch", () => {
@@ -184,30 +189,78 @@ describe("grab, pass, snatch", () => {
     place("b1", GREEN_SIDE);
     place("g1", GREEN_SIDE, 40);
     place("b2", GREEN_SIDE, -40);
-    state.potli.carrierId = "b1";
+    state.potlis.get("north")!.carrierId = "b1";
     round.act("g1", { kind: "snatch", targetId: "b1" });
     ticks(1);
     expect(round.pass("b1")).toBe(true);
     ticks(3);
-    expect(state.potli.carrierId).toBe("b2");
+    expect(state.potlis.get("north")!.carrierId).toBe("b2");
   });
 });
 
 describe("winning (score, wipe-out, time)", () => {
-  it("carrying the potli into the ENEMY den scores (D39)", () => {
+  it("carrying a potli into the ENEMY den drops it there, scored; both scored = win (D39, D68)", () => {
     const { state, P, ticks } = setup();
-    state.potli.carrierId = "b1";
+    const north = state.potlis.get("north")!;
+    const south = state.potlis.get("south")!;
+    north.carrierId = "b1";
     P("b1").x = MAP.spawns.green[4].x;
     P("b1").y = MAP.spawns.green[4].y;
+    ticks(0.1);
+    expect(north.scoredBy).toBe("blue");
+    expect(north.carrierId).toBe(""); // dropped in the den, hands free
+    expect(state.phase).toBe(Phase.Playing); // one isn't enough
+
+    south.carrierId = "b2";
+    P("b2").x = MAP.spawns.green[5].x;
+    P("b2").y = MAP.spawns.green[5].y;
     ticks(0.1);
     expect(state.phase).toBe(Phase.Ended);
     expect(state.winner).toBe("blue");
     expect(state.endReason).toBe("home");
   });
 
+  it("the defenders can steal a scored potli back out of their den (but the scorers can't re-grab it)", () => {
+    const { state, round, P, ticks } = setup();
+    const north = state.potlis.get("north")!;
+    north.carrierId = "b1";
+    P("b1").x = MAP.spawns.green[4].x;
+    P("b1").y = MAP.spawns.green[4].y;
+    ticks(0.1);
+    expect(north.scoredBy).toBe("blue");
+    // Blue can't take its own scored potli back out.
+    expect(round.act("b1", { kind: "grab", targetId: "north" })).toBe(false);
+    // A Green player in their den grabs it: no longer scored.
+    P("g3").x = north.x;
+    P("g3").y = north.y;
+    expect(round.act("g3", { kind: "grab", targetId: "north" })).toBe(true);
+    expect(north.scoredBy).toBe("");
+    expect(north.carrierId).toBe("g3");
+  });
+
+  it("one at a time: you can't grab a second potli while carrying one", () => {
+    const { state, round, P } = setup();
+    state.potlis.get("north")!.carrierId = "b1";
+    const south = state.potlis.get("south")!;
+    P("b1").x = south.x;
+    P("b1").y = south.y;
+    expect(round.act("b1", { kind: "grab", targetId: "south" })).toBe(false);
+  });
+
+  it("inside their den, defenders can be tagged by the attackers (D68)", () => {
+    const { round, P } = setup();
+    const den = MAP.dens.green; // Blue's goal, on the Green half
+    P("g3").x = den.x + den.w / 2;
+    P("g3").y = den.y + den.h / 2;
+    P("b3").x = P("g3").x - 40;
+    P("b3").y = P("g3").y;
+    expect(round.act("b3", { kind: "tag", targetId: "g3" })).toBe(true);
+    expect(P("g3").frozen).toBe(true);
+  });
+
   it("carrying it into your OWN den does nothing", () => {
     const { state, P, ticks } = setup();
-    state.potli.carrierId = "b1";
+    state.potlis.get("north")!.carrierId = "b1";
     P("b1").x = MAP.spawns.blue[4].x;
     P("b1").y = MAP.spawns.blue[4].y;
     ticks(0.1);
@@ -233,7 +286,7 @@ describe("winning (score, wipe-out, time)", () => {
   it("the Leader runs faster while carrying, unless a teammate is frozen", () => {
     const { state, round, P } = setup();
     const { carrierSpeedMultiplier: carry, leaderCarrySpeedBonus: bonus } = CONFIG.movement;
-    state.potli.carrierId = "b0";
+    state.potlis.get("north")!.carrierId = "b0";
     expect(round.speedFor(P("b0"))).toBeCloseTo(carry * bonus);
     P("b2").frozen = true;
     expect(round.speedFor(P("b0"))).toBe(carry);
@@ -270,7 +323,7 @@ describe("bots (simulation)", () => {
     let grabs = 0;
     let freezes = 0;
     for (let i = 0; i < seconds * CONFIG.movement.tickRate && s.state.phase === Phase.Playing; i++) {
-      const carrierBefore = s.state.potli.carrierId;
+      const carriedBefore = [...s.state.potlis.values()].filter((p) => p.carrierId).length;
       const frozenBefore = [...s.state.players.values()].filter((p) => p.frozen).length;
       for (const [id, p] of s.state.players) {
         const brain = brains.get(id);
@@ -281,7 +334,7 @@ describe("bots (simulation)", () => {
         if (d.pass) s.round.pass(id);
       }
       s.round.tick(DT);
-      if (!carrierBefore && s.state.potli.carrierId) grabs++;
+      if ([...s.state.potlis.values()].filter((p) => p.carrierId).length > carriedBefore) grabs++;
       if ([...s.state.players.values()].filter((p) => p.frozen).length > frozenBefore) freezes++;
     }
     return { ...s, grabs, freezes };
@@ -291,10 +344,13 @@ describe("bots (simulation)", () => {
     const { state } = simulate(
       40,
       ({ state, P }) => {
-        // Everyone else stands still in their dens; only b1 plays.
+        // Everyone else stands still in their dens; only b1 plays. South is already scored,
+        // so delivering north wins (D68).
         P("b1").x = MAP.middleZone.x;
         P("b1").y = MAP.middleZone.y;
-        state.potli.carrierId = "b1";
+        state.potlis.get("north")!.carrierId = "b1";
+        const den = MAP.dens.green;
+        Object.assign(state.potlis.get("south")!, { scoredBy: "blue", x: den.x + den.w / 2, y: den.y + den.h / 2 });
       },
       ["b1"],
     );
@@ -307,7 +363,7 @@ describe("bots (simulation)", () => {
       s.state.easyBots = true;
     });
     expect(grabs).toBe(0);
-    expect(state.potli.carrierId).toBe("");
+    expect(state.potlis.get("north")!.carrierId).toBe("");
   });
 
   it("a full bots game has grabs and tags, and finishes or keeps going sensibly", () => {

@@ -34,7 +34,7 @@ interface Seen {
   secret: Set<string>;
   near: Set<string>;
   prints: Set<string>;
-  potli: boolean;
+  potlis: Set<string>;
 }
 
 export class ViewSync {
@@ -51,7 +51,7 @@ export class ViewSync {
       secret: new Set(),
       near: new Set(),
       prints: new Set(),
-      potli: false,
+      potlis: new Set(),
     });
   }
 
@@ -106,19 +106,25 @@ export class ViewSync {
       if (p && seen.players.has(id)) view.remove(p, TAG.NEAR);
     });
 
-    // The potli.
-    const carrier = s.players.get(s.potli.carrierId);
-    const potliVisible =
-      reveal ||
-      !me ||
-      me.role === "leader" ||
-      s.potli.carrierId === viewerId ||
-      (carrier ? wantPlayers.has(carrier.id) : canSee(me, s.potli, visionRadius(me)));
-    if (potliVisible !== seen.potli) {
-      if (potliVisible) view.add(s.potli);
-      else view.remove(s.potli);
-      seen.potli = potliVisible;
+    // The potlis (D68): each one you can see, the one you carry, and the Leader gets both (arrows).
+    const wantPotlis = new Set<string>();
+    for (const [id, potli] of s.potlis) {
+      const carrier = s.players.get(potli.carrierId);
+      const visible =
+        reveal ||
+        !me ||
+        me.role === "leader" ||
+        potli.carrierId === viewerId ||
+        (carrier ? wantPlayers.has(carrier.id) : canSee(me, potli, visionRadius(me)));
+      if (visible) wantPotlis.add(id);
     }
+    this.diff(seen.potlis, wantPotlis, (id) => {
+      const p = s.potlis.get(id);
+      if (p) view.add(p);
+    }, (id) => {
+      const p = s.potlis.get(id);
+      if (p) view.remove(p);
+    });
 
     // Footprints.
     const wantPrints = new Set<string>();

@@ -9,6 +9,7 @@
 import {
   CONFIG,
   ClientMsg,
+  MAP,
   Phase,
   WHISPER_MAX_LENGTH,
   type Action,
@@ -191,7 +192,16 @@ export class Hud {
     // Timer.
     const m = Math.floor(s.timeLeft / 60);
     const sec = String(s.timeLeft % 60).padStart(2, "0");
-    this.timer.textContent = `${m}:${sec}`;
+    // Score either side of the clock (D68): potlis each team has in its goal den, out of 2.
+    const total = MAP.potliStarts.length; // not s.potlis.size: you only receive the ones you can see
+    const score = `${s.scoredBlue}/${total}|${m}:${sec}|${s.scoredGreen}/${total}`;
+    if (this.timer.dataset.score !== score) {
+      this.timer.dataset.score = score;
+      this.timer.innerHTML =
+        `<span class="score blue">${s.scoredBlue}/${total}</span>` +
+        `<span class="clock">${m}:${sec}</span>` +
+        `<span class="score green">${s.scoredGreen}/${total}</span>`;
+    }
     this.timer.classList.toggle("low", s.timeLeft <= 30);
 
     // Team + (secret) role badge: only you see your own secret role.
@@ -231,7 +241,7 @@ export class Hud {
       me.secretRole === "spy"
         ? [
             `You're a SPY for ${names[me.realTeam]}`,
-            `You sit in ${names[team]}, but you play for ${names[me.realTeam]}. Ice your fake teammates (Q) when nobody's looking, free your real team, pass them the potli. Don't get caught!`,
+            `You sit in ${names[team]}, but you play for ${names[me.realTeam]}. Ice your fake teammates (Q) when nobody's looking, free your real team, pass them the potlis. Don't get caught!`,
           ]
         : me.secretRole === "detective"
           ? [
@@ -239,8 +249,8 @@ export class Hud {
               `A spy is hiding in ${names[team]}. Watch for iced hands and footprints, then catch them and press Arrest (Q). A wrong arrest freezes YOU.`,
             ]
           : me.role === "leader"
-            ? [`You're the LEADER`, `Only your lamp unfreezes teammates. You see an arrow to the potli. Stay alive!`]
-            : [`You're on ${names[team]}`, `Carry the potli into the ${names[team === "blue" ? "green" : "blue"]} den. Help your Detective find the spy among you.`];
+            ? [`You're the LEADER`, `Only your lamp unfreezes teammates. You see arrows to both potlis. Stay alive!`]
+            : [`You're on ${names[team]}`, `Get BOTH potlis into the ${names[team === "blue" ? "green" : "blue"]} den to win. In their den, you can tag them! Help your Detective find the spy.`];
     $("role-title").textContent = title;
     $("role-title").style.color = me.secretRole === "spy" ? teamColor(me.realTeam) : teamColor(team);
     $("role-body").textContent = body;
@@ -261,10 +271,11 @@ export class Hud {
         ? `You're frozen. Your lamp thaws you in ${me.thawIn}s`
         : "You're frozen! Only your Leader's lamp can free you";
     }
-    if (s.potli && s.potli.carrierId === me.id) {
-      if (s.potli.snatcherId) return `Snatch! Run or pass! ${s.potli.snatchLeft.toFixed(1)}s`;
+    const mine = s.potlis ? [...s.potlis.values()].find((p) => p.carrierId === me.id) : undefined;
+    if (mine) {
+      if (mine.snatcherId) return `Snatch! Run or pass! ${mine.snatchLeft.toFixed(1)}s`;
       if (me.secretRole === "spy") return `You can't score. Slip it to ${names[me.realTeam]} (Pass)`;
-      return `You have the potli! Get it into the ${names[team === "blue" ? "green" : "blue"]} den`;
+      return `You have a potli! Drop it in the ${names[team === "blue" ? "green" : "blue"]} den`;
     }
     if (me.icedHand) return "Your hand is iced (20 s). A fireplace melts it now.";
     const myLeader = [...s.players.values()].find((p) => p.team === team && p.role === "leader");

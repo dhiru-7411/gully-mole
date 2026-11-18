@@ -17,6 +17,7 @@ import {
   MAP,
   bestAction,
   bestRoleAction,
+  carrying,
   canSee,
   visionRadius,
   dist,
@@ -62,15 +63,23 @@ export class BotBrain {
       return { move: IDLE };
     }
     const players = [...s.players.values()];
-    const potli = s.potli;
+    const potlis = [...s.potlis.values()];
     const team = me.team as Team;
     const enemy = enemyOf(team);
-    const carrier = s.players.get(potli.carrierId);
     const onOurHalf = (p: Point) => halfAt(p.x) === team;
     const d: BotDecision = { move: IDLE };
+    // Two potlis (D68).
+    const mine = carrying(me, potlis);
+    const carriers = potlis.map((p) => s.players.get(p.carrierId)).filter((p): p is PlayerState => !!p);
+    const enemyCarrier = nearestOf(me, carriers, (p) => p.team === enemy);
+    const mateCarrier = nearestOf(me, carriers, (p) => p.team === team && p.id !== me.id);
+    /** Loose potlis our team still needs: not carried, not already scored by us. */
+    const wanted = potlis
+      .filter((p) => !p.carrierId && p.scoredBy !== team)
+      .sort((a, b) => dist(me, a) - dist(me, b));
 
     // Press the smart button after a short, human-ish delay.
-    const action = bestAction(me, players, potli);
+    const action = bestAction(me, players, potlis);
     if (action) {
       if (this.reactIn < 0) this.reactIn = Math.floor((0.35 + this.random() * 0.55) * tickRate);
       if (this.reactIn-- === 0) d.action = action;
@@ -111,8 +120,8 @@ export class BotBrain {
       }
 
       // Carrying as a spy: we can never score (D2). Get it to our real team.
-      if (carrier?.id === me.id) {
-        const mate = passTarget(me, players, potli);
+      if (mine) {
+        const mate = passTarget(me, players, potlis);
         if (mate && mate.team !== me.team) return { ...d, pass: true };
         const friend = nearestOf(me, players, (p) => p.realTeam === me.realTeam && p.team !== team && !p.frozen);
         if (friend) return { ...d, move: steer(me, friend) };
@@ -133,12 +142,12 @@ export class BotBrain {
       }
     }
 
-    // Carrying: into the enemy den. Pass if a defender is right on us and a mate is beside us.
-    if (carrier?.id === me.id) {
+    // Carrying: into the enemy den (it's dropped there, D68). Pass if a defender is right on us.
+    if (mine) {
       const goal = goalDen(team);
       d.move = steer(me, { x: goal.x + goal.w / 2, y: goal.y + goal.h / 2 });
       const threatened = players.some((p) => p.team === enemy && !p.frozen && dist(p, me) < 90);
-      if (threatened && passTarget(me, players, potli) && this.random() < 0.1) d.pass = true;
+      if (threatened && passTarget(me, players, potlis) && this.random() < 0.1) d.pass = true;
       return d;
     }
 
@@ -151,13 +160,16 @@ export class BotBrain {
     const defender = this.isDefender(me, players);
 
     if (defender) {
-      // The enemy carrier is heading for OUR den: stop them.
-      if (carrier && carrier.team === enemy) return { ...d, move: steer(me, carrier) };
+      // An enemy carrier is heading for OUR den: stop them.
+      if (enemyCarrier) return { ...d, move: steer(me, enemyCarrier) };
       // Tag intruders on our half.
       const intruder = nearestOf(me, players, (p) => p.team === enemy && !p.frozen && onOurHalf(p));
       if (intruder && dist(me, intruder) < 700) return { ...d, move: steer(me, intruder) };
-      // Loose potli on our half and close: clear it.
-      if (!carrier && onOurHalf(potli) && dist(me, potli) < 400) return { ...d, move: steer(me, potli) };
+      // A potli the enemy scored in our den: steal it back out (D68). Otherwise clear loose ones nearby.
+      const stolenBack = wanted.find((p) => p.scoredBy === enemy);
+      if (stolenBack) return { ...d, move: steer(me, stolenBack) };
+      const loose = wanted.find((p) => onOurHalf(p) && dist(me, p) < 400);
+      if (loose) return { ...d, move: steer(me, loose) };
       return { ...d, move: this.wander(me, team, tickRate, "defend") };
     }
 
@@ -165,14 +177,14 @@ export class BotBrain {
     // Back off from a nearby defender while on their half (they can tag us there).
     if (!onOurHalf(me)) {
       const threat = nearestOf(me, players, (p) => p.team === enemy && !p.frozen && dist(p, me) < 180);
-      if (threat && !(carrier && carrier.team === team && dist(me, carrier) < 150)) {
+      if (threat && !(mateCarrier && dist(me, mateCarrier) < 150)) {
         const away = { x: me.x + (me.x - threat.x) * 3, y: me.y + (me.y - threat.y) * 3 };
         return { ...d, move: steer(me, away) };
       }
     }
-    if (carrier && carrier.team === enemy) return { ...d, move: steer(me, carrier) };
-    if (!carrier) return { ...d, move: steer(me, potli) };
-    if (carrier.team === team && dist(me, carrier) > 110) return { ...d, move: steer(me, carrier) };
+    if (enemyCarrier) return { ...d, move: steer(me, enemyCarrier) };
+    if (wanted[0]) return { ...d, move: steer(me, wanted[0]) };
+    if (mateCarrier && dist(me, mateCarrier) > 110) return { ...d, move: steer(me, mateCarrier) };
     return { ...d, move: this.wander(me, team, tickRate, "attack") };
   }
 

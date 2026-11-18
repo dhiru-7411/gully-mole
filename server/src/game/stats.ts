@@ -104,17 +104,21 @@ export class RoundStats {
     this.moments.push(`${m}:${s} ${text}`);
   }
 
-  /** Every playing tick: hold time and how close the carrier got to scoring. */
+  /** Every playing tick: hold time and how close carriers got to scoring (both potlis, D68). */
   tick(dt: number, state: GameState) {
     this.elapsed += dt;
-    const carrier = state.players.get(state.potli.carrierId);
-    if (!carrier || carrier.secretRole === "spy") return;
-    const team = carrier.realTeam as Team;
-    this.add(team, "holdTime", dt / 10); // counted per 10 s
-    this.p(carrier.id).holdSec += dt;
-    const goal = goalCentre(team);
-    const progress = Math.max(0, Math.min(1, 1 - dist(carrier, goal) / dist(MIDDLE, goal)));
-    if (progress > this.progress[team]) this.progress[team] = progress;
+    for (const potli of state.potlis.values()) {
+      // A potli sitting scored in a goal den counts as full progress for that team.
+      if (potli.scoredBy === "blue" || potli.scoredBy === "green") this.progress[potli.scoredBy] = 1;
+      const carrier = state.players.get(potli.carrierId);
+      if (!carrier || carrier.secretRole === "spy") continue;
+      const team = carrier.realTeam as Team;
+      this.add(team, "holdTime", dt / 10); // counted per 10 s
+      this.p(carrier.id).holdSec += dt;
+      const goal = goalCentre(team);
+      const progress = Math.max(0, Math.min(1, 1 - dist(carrier, goal) / dist(MIDDLE, goal)));
+      if (progress > this.progress[team]) this.progress[team] = progress;
+    }
   }
 
   /** A carrier frozen within the last quarter of the way to the goal "fumbled the bag". */

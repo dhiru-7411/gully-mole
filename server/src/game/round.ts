@@ -17,12 +17,14 @@ import {
   Freeze,
   MAP,
   Phase,
+  PotliState,
   Role,
   SecretRole,
   TEAMS,
   assignRoles,
   assignTeams,
   canSee,
+  carrying,
   visionRadius,
   dist,
   inGoal,
@@ -118,10 +120,15 @@ export class Round {
       }
     }
 
-    s.potli.x = MAP.middleZone.x;
-    s.potli.y = MAP.middleZone.y;
-    s.potli.carrierId = "";
-    this.cancelSnatch();
+    // Two potlis (D68), north and south of the centre on the half line.
+    // Reuse the same objects every round (the per-player views track them).
+    for (const start of MAP.potliStarts) {
+      const potli = s.potlis.get(start.id) ?? new PotliState({ id: start.id });
+      Object.assign(potli, { x: start.x, y: start.y, carrierId: "", snatcherId: "", snatchLeft: 0, scoredBy: "" });
+      if (!s.potlis.has(start.id)) s.potlis.set(start.id, potli);
+    }
+    s.scoredBlue = 0;
+    s.scoredGreen = 0;
     s.footprints.clear();
 
     s.timeLeft = roundDurationSeconds(s.players.size);
@@ -147,7 +154,7 @@ export class Round {
     const s = this.state;
     const me = s.players.get(playerId);
     if (!me || s.phase !== Phase.Playing) return false;
-    if (!isActionAllowed(me, action, s.players, s.potli)) return false;
+    if (!isActionAllowed(me, action, s.players, s.potlis.values())) return false;
 
     const target = s.players.get(action.targetId);
     switch (action.kind) {
@@ -166,11 +173,17 @@ export class Round {
         this.unfreeze(target!);
         break;
       case "snatch":
-        s.potli.snatcherId = me.id;
-        s.potli.snatchLeft = CONFIG.timers.snatchCountdownSec;
+        const potli = carrying(target!, s.potlis.values())!;
+        potli.snatcherId = me.id;
+        potli.snatchLeft = CONFIG.timers.snatchCountdownSec;
         break;
       case "grab":
-        s.potli.carrierId = me.id;
+        const grabbed = s.potlis.get(action.targetId)!;
+        if (grabbed.scoredBy) {
+          this.stats.moment(`${me.nickname} stole a scored potli back out of the den!`);
+          grabbed.scoredBy = ""; // taken back out: no longer counts (D68)
+        }
+        grabbed.carrierId = me.id;
         this.stats.p(me.id).grabs++;
         if (!this.anyGrab) this.stats.moment(`${me.nickname} grabbed the potli first.`);
         this.anyGrab = true;
@@ -220,10 +233,11 @@ export class Round {
     const s = this.state;
     const me = s.players.get(playerId);
     if (!me || s.phase !== Phase.Playing) return false;
-    const mate = passTarget(me, s.players.values(), s.potli);
-    if (!mate) return false;
-    s.potli.carrierId = mate.id;
-    this.cancelSnatch(); // a hand-off beats the countdown
+    const mate = passTarget(me, s.players.values(), s.potlis.values());
+    const potli = carrying(me, s.potlis.values());
+    if (!mate || !potli) return false;
+    potli.carrierId = mate.id;
+    this.cancelSnatch(potli); // a hand-off beats the countdown
 
     if (mate.team === me.team && mate.realTeam === me.realTeam) {
       this.stats.p(me.id).handOffs++;
@@ -252,7 +266,7 @@ export class Round {
 
   /** How fast this player moves right now (carry, Leader bonus, dragging). */
   speedFor(p: PlayerState): number {
-    return speedMultiplier(p, this.state.players.values(), this.state.potli);
+    return speedMultiplier(p, this.state.players.values(), this.state.potlis.values());
   }
 
   // -------------------------------------------------------------- tick
@@ -273,13 +287,15 @@ export class Round {
     this.tickDrags();
     this.stats.tick(dt, s);
 
-    // The potli moves with its carrier.
-    const carrier = s.players.get(s.potli.carrierId);
-    if (carrier) {
-      s.potli.x = carrier.x;
-      s.potli.y = carrier.y;
-    } else if (s.potli.carrierId) {
-      s.potli.carrierId = "";
+    // Each potli moves with its carrier.
+    for (const potli of s.potlis.values()) {
+      const carrier = s.players.get(potli.carrierId);
+      if (carrier) {
+        potli.x = carrier.x;
+        potli.y = carrier.y;
+      } else if (potli.carrierId) {
+        potli.carrierId = "";
+      }
     }
 
     this.tickSnatch(dt);
@@ -400,32 +416,65 @@ export class Round {
 
   private tickSnatch(dt: number) {
     const s = this.state;
-    if (!s.potli.snatcherId) return;
-    const snatcher = s.players.get(s.potli.snatcherId);
-    const carrier = s.players.get(s.potli.carrierId);
-    // The countdown only continues while the snatcher stays beside the carrier (D36).
-    const stillOn =
-      snatcher && carrier && !snatcher.frozen && dist(snatcher, carrier) <= CONFIG.distances.snatch * 1.25;
-    if (!stillOn) return this.cancelSnatch();
+    for (const potli of s.potlis.values()) {
+      if (!potli.snatcherId) continue;
+      const snatcher = s.players.get(potli.snatcherId);
+      const carrier = s.players.get(potli.carrierId);
+      // The countdown only continues while the snatcher stays beside the carrier (D36).
+      const stillOn =
+        snatcher &&
+        carrier &&
+        !snatcher.frozen &&
+        !carrying(snatcher, s.potlis.values()) &&
+        dist(snatcher, carrier) <= CONFIG.distances.snatch * 1.25;
+      if (!stillOn) {
+        this.cancelSnatch(potli);
+        continue;
+      }
 
-    s.potli.snatchLeft = Math.max(0, s.potli.snatchLeft - dt);
-    if (s.potli.snatchLeft === 0) {
-      s.potli.carrierId = snatcher.id;
-      this.stats.p(snatcher.id).snatches++;
-      this.stats.add(snatcher.realTeam, "objectSnatched");
-      this.stats.add(carrier.realTeam, "objectLostToEnemy");
-      this.stats.moment(`${snatcher.nickname} snatched the potli from ${carrier.nickname}.`);
-      this.cancelSnatch();
+      potli.snatchLeft = Math.max(0, potli.snatchLeft - dt);
+      if (potli.snatchLeft === 0) {
+        potli.carrierId = snatcher.id;
+        this.stats.p(snatcher.id).snatches++;
+        this.stats.add(snatcher.realTeam, "objectSnatched");
+        this.stats.add(carrier.realTeam, "objectLostToEnemy");
+        this.stats.moment(`${snatcher.nickname} snatched a potli from ${carrier.nickname}.`);
+        this.cancelSnatch(potli);
+      }
+    }
+  }
+
+  /**
+   * D68: a carrier who reaches their goal den (the ENEMY's den) drops the potli
+   * there: it's "scored" for that team, and their hands are free again.
+   * A spy never scores (D2).
+   */
+  private deliver() {
+    const s = this.state;
+    for (const potli of s.potlis.values()) {
+      const carrier = s.players.get(potli.carrierId);
+      if (!carrier || carrier.secretRole === SecretRole.Spy) continue;
+      if (!inGoal(carrier.team as Team, carrier)) continue;
+      potli.carrierId = "";
+      potli.scoredBy = carrier.team;
+      potli.x = carrier.x;
+      potli.y = carrier.y;
+      this.cancelSnatch(potli);
+      const scored = [...s.potlis.values()].filter((p) => p.scoredBy === carrier.team).length;
+      this.announce(`${carrier.nickname} scored a potli for ${names[carrier.team]} (${scored}/${s.potlis.size})!`);
     }
   }
 
   /** Score, then wipe-out, then time. */
   private checkEnd() {
     const s = this.state;
-    const carrier = s.players.get(s.potli.carrierId);
-    // D39: you score by carrying the potli into the ENEMY's den. D2: a spy never scores.
-    if (carrier && carrier.secretRole !== SecretRole.Spy && inGoal(carrier.team as Team, carrier)) {
-      return this.end(carrier.team, "home");
+    this.deliver();
+    const all = [...s.potlis.values()];
+    s.scoredBlue = all.filter((p) => p.scoredBy === "blue").length;
+    s.scoredGreen = all.filter((p) => p.scoredBy === "green").length;
+    // D68: you win when BOTH potlis sit scored in your goal den at the same time.
+    for (const team of TEAMS) {
+      if (all.length > 0 && all.every((p) => p.scoredBy === team)) return this.end(team, "home");
     }
 
     // Wipe-out (GDD): every player who REALLY plays for a team (incl. their planted
@@ -494,14 +543,16 @@ export class Round {
     p.freeze = kind;
     p.protected = false;
     // GDD: a frozen carrier drops the potli where they stand.
-    if (s.potli.carrierId === p.id) {
-      this.stats.noteFrozenCarrier(p);
-      s.potli.carrierId = "";
-      s.potli.x = p.x;
-      s.potli.y = p.y;
-      this.cancelSnatch();
+    for (const potli of s.potlis.values()) {
+      if (potli.carrierId === p.id) {
+        this.stats.noteFrozenCarrier(p);
+        potli.carrierId = "";
+        potli.x = p.x;
+        potli.y = p.y;
+        this.cancelSnatch(potli);
+      }
+      if (potli.snatcherId === p.id) this.cancelSnatch(potli);
     }
-    if (s.potli.snatcherId === p.id) this.cancelSnatch();
     // Anyone this player was dragging is let go.
     for (const o of s.players.values()) if (o.draggedBy === p.id) o.draggedBy = "";
     if (kind !== Freeze.Shame) p.draggedBy = "";
@@ -532,9 +583,12 @@ export class Round {
     this.thawTimers.delete(p.id);
   }
 
-  private cancelSnatch() {
-    this.state.potli.snatcherId = "";
-    this.state.potli.snatchLeft = 0;
+  /** Stop the snatch countdown on one potli, or on all of them. */
+  private cancelSnatch(potli?: PotliState) {
+    for (const p of potli ? [potli] : this.state.potlis.values()) {
+      p.snatcherId = "";
+      p.snatchLeft = 0;
+    }
   }
 
   private announce(text: string) {

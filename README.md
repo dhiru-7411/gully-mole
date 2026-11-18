@@ -1,6 +1,6 @@
 # Gully Mole
 
-A 2D top-down, real-time multiplayer party game for the browser. Two teams, Blue and Green, race to grab the potli from the middle of the map and carry it into the other team's den (like scoring a goal), while each team secretly carries a spy from the other side.
+A 2D top-down, real-time multiplayer party game for the browser. Two teams, Blue and Green, race to carry two potlis from the middle of the map into the other team's den (like scoring goals): hold both there at once to win, while each team secretly carries a spy from the other side.
 
 - Rules: [`docs/GDD.md`](docs/GDD.md) (source of truth; "Police/Chor" in it now means Blue/Green, see D20)
 - Rulings on unclear rules: [`docs/DECISIONS.md`](docs/DECISIONS.md)
@@ -56,14 +56,14 @@ The big button's label changes to what you can do right now (D32). If two things
 | **Unfreeze** | You're the Leader, beside a frozen teammate |
 | **Tag** | An enemy standing on **your** half is within reach: freezes them. Then a **10 s cooldown** before your next tag (the button shows "Tag 7…") |
 | **Snatch** | Beside an enemy carrying the potli: a 3 s countdown starts, and stay beside them to take it |
-| **Grab** | Standing on the loose potli |
+| **Grab** | Standing on a loose potli, hands empty (one at a time) |
 
 ### How a round works (M2)
 
 - Teams and one Leader per team are picked at random. Everyone spawns in their own den.
-- **Score by carrying the potli into the enemy's den** (far end of their half, D39). Defend your own den.
-- You can only tag enemies who stand on **your** half. Frozen players drop the potli and can't move.
-- Only your **Leader** can unfreeze you. A frozen Leader thaws by themselves after 10 s and is protected for a moment. Teammates see an arrow to a frozen Leader, and the Leader always sees an arrow to the potli.
+- **Two potlis (D68).** Carry one into the enemy's den and it's dropped there, scored. **Win when both potlis sit in the enemy's den at once.** The defenders can steal a scored potli back out, so guard it. You carry one at a time.
+- You can only tag enemies who stand on **your** half, or inside **their own den** (the den is the attackers' turf, D68). Frozen players drop the potli and can't move.
+- Only your **Leader** can unfreeze you. A frozen Leader thaws by themselves after 10 s and is protected for a moment. Teammates see an arrow to a frozen Leader, and the Leader always sees an arrow to each potli.
 - Carrying slows you down (D38). A Leader carrying it is faster, unless a teammate is frozen.
 - **Win by:** scoring, or freezing the whole other team at once (wipe-out). If time runs out, the better automatic stats score wins (M5).
 - After a round, the host presses **Back to lobby** to play again.
@@ -80,6 +80,7 @@ Scoring weights are in `shared/src/config.ts` (`scoring`, all 1 for now); the fa
 
 - **Huddles:** only a Leader can call one (2 per round, not while frozen). The **whole game and the timer pause**, and each team gets its own private chat for 2.5 minutes. The spy sits in their fake team's huddle and hears everything. The Leader who called it can end it early.
 - **Quick messages:** one tap (or keys 1–4) sends "Spy near the fire!", "Leader frozen!", "Potli on the left!" or "Trust me bro" to your team, as a speech bubble and a feed line.
+- **How to play (D69):** first-time visitors get a short 5-page guide (goal, controls, freezing, secret roles, talk and awards). Reopen it any time with **❓ How to play** on the home or lobby screen.
 - **Whisper:** the spy's private line to their real team (M3).
 
 ### Roles and secrets (M3)
