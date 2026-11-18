@@ -21,6 +21,7 @@ import {
 import { createRoom, forget, friendlyError, joinRoom, pingServer, tryReconnect, type GameRoom } from "./net";
 import { startGame } from "./game/GameScene";
 import { addBubble, addHuddleLine, addPing, clearFeed, pushFeed } from "./game/feed";
+import { openHowTo, openHowToIfFirstVisit } from "./howto";
 
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
 
@@ -311,3 +312,7 @@ async function wakeServer() {
   status.className = "server-status down";
 }
 wakeServer();
+
+// First-timer guide (D69): opens by itself once, and from the "How to play" buttons.
+document.querySelectorAll(".howto-open").forEach((b) => b.addEventListener("click", openHowTo));
+openHowToIfFirstVisit();
