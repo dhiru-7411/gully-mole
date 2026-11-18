@@ -16,7 +16,7 @@ A 2D top-down, real-time multiplayer party game for the browser. Two teams, Blue
 | M3 Roles and secrets: Detective, spies, limited vision, per-player views, arrests, rescues | ✅ done |
 | M4 Communication: Leader huddles (pause + team chat), one-tap quick messages | ✅ done |
 | M5 End of round: stats for every factor, timeout winner, reveal, peer awards, honesty bonus, MVP | ✅ done |
-| M6 Deploy (Netlify + Render, step-by-step guide) | next |
+| M6 Deploy: Render (server) + Netlify (website), wake-up banner, step-by-step guide in docs/DEPLOY.md | ✅ ready (you create the accounts) |
 
 ## Requirements
 
@@ -110,6 +110,10 @@ Your phone must be on the same wifi as your computer.
 1. Run `npm run dev`. Vite prints a `Network:` address like `http://192.168.1.23:5173`.
 2. Open that address on your phone. The client automatically talks to the server on the same address, port 2567.
 3. If it can't connect, allow Node through your computer's firewall.
+
+## Putting it online
+
+Free hosting: the game server on **Render** (`render.yaml`) and the website on **Netlify** (`netlify.toml`). Follow **[docs/DEPLOY.md](docs/DEPLOY.md)**, about 15 minutes. After that, merging into `main` updates both automatically.
 
 ## Tests
 

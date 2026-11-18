@@ -15,6 +15,27 @@ const serverUrl =
 
 export const sdk = new ColyseusSDK(serverUrl);
 
+/** The same server over plain HTTP(S), for the health check. */
+const httpUrl = serverUrl.replace(/^ws/, "http").replace(/\/$/, "");
+
+/**
+ * Is the game server up? On Render's free tier it sleeps after ~15 min with
+ * nobody playing; this request also WAKES it (takes up to a minute).
+ * `no-cors`: we only need to know it answered, not read the reply.
+ */
+export async function pingServer(timeoutMs = 5000): Promise<boolean> {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+  try {
+    await fetch(`${httpUrl}/health`, { mode: "no-cors", cache: "no-store", signal: ctrl.signal });
+    return true;
+  } catch {
+    return false;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 export type GameRoom = Room<any, GameState>;
 
 /** Per-tab, so several tabs on one computer each keep their own player. */
@@ -59,7 +80,7 @@ export function friendlyError(err: unknown): string {
   if (/not found|no rooms found|invalid room/i.test(msg)) return "No room with that code.";
   if (/locked|already started/i.test(msg)) return "That game already started.";
   if (/ECONNREFUSED|Failed to fetch|NetworkError|network/i.test(msg)) {
-    return "Can't reach the game server. Is it running?";
+    return "Can't reach the game server. If it was asleep, wait a few seconds and try again.";
   }
   return msg || "Something went wrong.";
 }

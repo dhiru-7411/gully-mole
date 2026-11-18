@@ -1,0 +1,21 @@
+# Netlify: builds and hosts the Gully Mole website (the client). See docs/DEPLOY.md.
+[build]
+  # Build from the repo root so the shared code is available.
+  base = "/"
+  command = "npm ci && npm run build -w client"
+  publish = "client/dist"
+
+[build.environment]
+  NODE_VERSION = "22"
+  # VITE_SERVER_URL is set in Netlify's UI (Site configuration -> Environment
+  # variables) to your Render server, e.g. wss://gully-mole-server.onrender.com
+
+# Long cache for hashed assets; always re-check the page itself.
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+[[headers]]
+  for = "/index.html"
+  [headers.values]
+    Cache-Control = "no-cache"

@@ -80,8 +80,15 @@ export class Hud {
   private wasHuddle = false;
 
   constructor(private room: GameRoom) {
-    // Quick-message chips (keys 1–4).
-    this.quickBar.replaceChildren(
+    // Quick messages: one small "Say…" button that opens the 4 lines, so they
+    // don't cover the map. Keys 1–4 send straight away without opening it.
+    const toggle = document.createElement("button");
+    toggle.type = "button";
+    toggle.className = "quick-toggle";
+    toggle.textContent = "Say…";
+    const chips = document.createElement("div");
+    chips.className = "quick-chips hidden";
+    chips.append(
       ...CONFIG.quickMessages.map((text, i) => {
         const b = document.createElement("button");
         b.type = "button";
@@ -90,10 +97,16 @@ export class Hud {
         b.addEventListener("pointerdown", (e) => {
           e.preventDefault();
           this.sendQuick(i);
+          chips.classList.add("hidden");
         });
         return b;
       }),
     );
+    toggle.addEventListener("pointerdown", (e) => {
+      e.preventDefault();
+      chips.classList.toggle("hidden");
+    });
+    this.quickBar.replaceChildren(chips, toggle);
     this.huddleBtn.addEventListener("click", this.callHuddle);
     this.endHuddleBtn.addEventListener("click", this.endHuddle);
     this.huddleForm.addEventListener("submit", this.sendHuddleChat);

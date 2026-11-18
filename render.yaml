@@ -1,0 +1,22 @@
+# Render "Blueprint": tells Render how to run the Gully Mole game server.
+# In Render: New + -> Blueprint -> pick this repo. See docs/DEPLOY.md.
+services:
+  - type: web
+    name: gully-mole-server
+    runtime: node
+    plan: free # $0. Sleeps after ~15 min idle; the first visit wakes it (~1 min).
+    branch: main
+    autoDeploy: true # redeploys whenever main changes
+    # Installs only what the server needs to run (no test tools, no website build).
+    buildCommand: npm ci --omit=dev
+    startCommand: npm start -w server
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: NODE_ENV
+        value: production
+      # Lets the host add dev bots online too (handy for testing alone).
+      # Set to "false" to hide the bot buttons for real games.
+      - key: ALLOW_BOTS
+        value: "true"
