@@ -9,13 +9,14 @@
  *  - never the spy's identity unless you're on their real team.
  */
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { boot, type ColyseusTestServer } from "@colyseus/testing";
+import { type ColyseusTestServer } from "@colyseus/testing";
+import { bootOn } from "./boot";
 import { CONFIG, ClientMsg, Phase, ROOM_NAME, canSee, dist, visionRadius } from "@gully/shared";
 import appConfig from "../src/app.config";
 
 let colyseus: ColyseusTestServer<any>;
 beforeAll(async () => {
-  colyseus = await boot(appConfig, 2597);
+  colyseus = await bootOn(appConfig, 2597);
 });
 afterAll(async () => colyseus.shutdown());
 beforeEach(async () => colyseus.cleanup());

@@ -98,6 +98,8 @@ export function canTag(me: RulePlayer, target: RulePlayer): boolean {
     target.team !== "" &&
     // Your half, or inside your goal den: the den is the attackers' turf (D68).
     (halfAt(target.x) === me.team || (me.team !== "" && inDen(enemyOf(me.team as Team), target))) &&
+    // ...and the den you drop potlis in is your safe zone: nobody can tag you there (D70).
+    !inGoal(target.team as Team, target) &&
     dist(me, target) <= D.tag
   );
 }

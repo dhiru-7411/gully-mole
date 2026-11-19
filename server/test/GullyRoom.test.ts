@@ -3,7 +3,8 @@
  * through the real client SDK, exactly like the browser does.
  */
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { boot, type ColyseusTestServer } from "@colyseus/testing";
+import { type ColyseusTestServer } from "@colyseus/testing";
+import { bootOn } from "./boot";
 import {
   CONFIG,
   ClientMsg,
@@ -21,7 +22,7 @@ import appConfig from "../src/app.config";
 let colyseus: ColyseusTestServer<any>;
 
 beforeAll(async () => {
-  colyseus = await boot(appConfig, 2599);
+  colyseus = await bootOn(appConfig, 2599);
 });
 afterAll(async () => {
   await colyseus.shutdown();

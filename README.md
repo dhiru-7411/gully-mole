@@ -1,6 +1,6 @@
 # Gully Mole
 
-A 2D top-down, real-time multiplayer party game for the browser. Two teams, Blue and Green, race to carry two potlis from the middle of the map into the other team's den (like scoring goals): hold both there at once to win, while each team secretly carries a spy from the other side.
+A 2D top-down, real-time multiplayer party game for the browser. Two teams, Blue and Green, start in the other team's den and race to carry two potlis from the middle of the map into their own den on the far side: hold both there at once to win, while each team secretly carries a spy from the other side.
 
 - Rules: [`docs/GDD.md`](docs/GDD.md) (source of truth; "Police/Chor" in it now means Blue/Green, see D20)
 - Rulings on unclear rules: [`docs/DECISIONS.md`](docs/DECISIONS.md)
@@ -61,8 +61,8 @@ The big button's label changes to what you can do right now (D32). If two things
 ### How a round works (M2)
 
 - Teams and one Leader per team are picked at random. Everyone spawns in their own den.
-- **Two potlis (D68).** Carry one into the enemy's den and it's dropped there, scored. **Win when both potlis sit in the enemy's den at once.** The defenders can steal a scored potli back out, so guard it. You carry one at a time.
-- You can only tag enemies who stand on **your** half, or inside **their own den** (the den is the attackers' turf, D68). Frozen players drop the potli and can't move.
+- **Two potlis (D68, D70).** You start in the other team's den; **your den** (your colour) is on the far side. Carry a potli into your den and it's dropped there, scored. **Win when both potlis sit in your den at once.** Enemies can steal a scored potli back out, so guard it. You carry one at a time.
+- You can tag enemies who stand on **your** half (where you start), or inside **your den**. **Your den is your safe zone** (D70): nobody can tag you inside it. Frozen players drop the potli and can't move.
 - Only your **Leader** can unfreeze you. A frozen Leader thaws by themselves after 10 s and is protected for a moment. Teammates see an arrow to a frozen Leader, and the Leader always sees an arrow to each potli.
 - Carrying slows you down (D38). A Leader carrying it is faster, unless a teammate is frozen.
 - **Win by:** scoring, or freezing the whole other team at once (wipe-out). If time runs out, the better automatic stats score wins (M5).

@@ -4,7 +4,8 @@
  * network to check the game pauses and messages only reach the right team.
  */
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { boot, type ColyseusTestServer } from "@colyseus/testing";
+import { type ColyseusTestServer } from "@colyseus/testing";
+import { bootOn } from "./boot";
 import {
   CONFIG,
   ClientMsg,
@@ -87,7 +88,7 @@ describe("huddle rules (GDD)", () => {
 
 let colyseus: ColyseusTestServer<any>;
 beforeAll(async () => {
-  colyseus = await boot(appConfig, 2596);
+  colyseus = await bootOn(appConfig, 2596);
 });
 afterAll(async () => colyseus.shutdown());
 beforeEach(async () => colyseus.cleanup());

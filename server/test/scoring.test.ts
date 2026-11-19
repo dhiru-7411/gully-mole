@@ -3,7 +3,8 @@
  */
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { ArraySchema } from "@colyseus/schema";
-import { boot, type ColyseusTestServer } from "@colyseus/testing";
+import { type ColyseusTestServer } from "@colyseus/testing";
+import { bootOn } from "./boot";
 import {
   CONFIG,
   ClientMsg,
@@ -228,7 +229,7 @@ describe("peer awards", () => {
 
 let colyseus: ColyseusTestServer<any>;
 beforeAll(async () => {
-  colyseus = await boot(appConfig, 2595);
+  colyseus = await bootOn(appConfig, 2595);
 });
 afterAll(async () => colyseus.shutdown());
 beforeEach(async () => colyseus.cleanup());
