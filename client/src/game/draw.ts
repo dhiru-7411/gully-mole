@@ -3,7 +3,7 @@
  * Simple shapes only (docs/ART.md): no image files to download.
  */
 import Phaser from "phaser";
-import { CONFIG, MAP, TEAMS } from "@gully/shared";
+import { CONFIG, MAP, TEAMS, type Team } from "@gully/shared";
 import { COLORS, TEAM_COLORS } from "./colors";
 
 export function drawMap(scene: Phaser.Scene) {
@@ -18,30 +18,31 @@ export function drawMap(scene: Phaser.Scene) {
   g.lineStyle(3, COLORS.text, 0.28);
   for (let y = 0; y < MAP.height; y += 26) g.lineBetween(MAP.halfLine, y, MAP.halfLine, y + 14);
 
-  // Dens.
-  for (const team of TEAMS) {
-    const d = MAP.dens[team];
-    g.fillStyle(TEAM_COLORS[team].body, 0.22).fillRoundedRect(d.x, d.y, d.w, d.h, 22);
-    g.lineStyle(5, TEAM_COLORS[team].body).strokeRoundedRect(d.x, d.y, d.w, d.h, 22);
+  // Dens (D70, owner): a den belongs to the team that DROPS potlis in it.
+  // You start in the other team's den and carry potlis across the map to yours.
+  // (In code, MAP.dens[team] is still where `team` spawns.)
+  for (const spawner of TEAMS) {
+    const d = MAP.dens[spawner];
+    const owner: Team = spawner === "blue" ? "green" : "blue";
+    g.fillStyle(TEAM_COLORS[owner].body, 0.22).fillRoundedRect(d.x, d.y, d.w, d.h, 22);
+    g.lineStyle(5, TEAM_COLORS[owner].body).strokeRoundedRect(d.x, d.y, d.w, d.h, 22);
     scene.add
-      .text(d.x + d.w / 2, d.y - 12, `${CONFIG.teams.names[team]} den`, {
+      .text(d.x + d.w / 2, d.y - 12, `${CONFIG.teams.names[owner]} den`, {
         fontFamily: "system-ui, sans-serif",
         fontSize: "26px",
         fontStyle: "bold",
-        color: "#f1f2f6",
+        color: TEAM_COLORS[owner].css,
       })
       .setOrigin(0.5, 1) // sits just above the den, so spawning blobs don't cover it
-      .setAlpha(0.85);
-    // D39: the OTHER team scores here (like a football goal you defend).
-    const attacker = team === "blue" ? "green" : "blue";
+      .setAlpha(0.95);
     scene.add
-      .text(d.x + d.w / 2, d.y + d.h + 10, `${CONFIG.teams.names[attacker]} scores here`, {
+      .text(d.x + d.w / 2, d.y + d.h + 10, "drop potlis here · safe zone", {
         fontFamily: "system-ui, sans-serif",
         fontSize: "18px",
-        color: TEAM_COLORS[attacker].css,
+        color: "#f1f2f6",
       })
       .setOrigin(0.5, 0)
-      .setAlpha(0.9);
+      .setAlpha(0.8);
   }
 
   // Middle zone (dashed circle) and the potli's start spot.

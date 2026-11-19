@@ -23,9 +23,9 @@ const PAGES: Page[] = [
     title: "The goal",
     lines: [
       `<b>Blue vs Green.</b> ${MAP.potliStarts.length} potlis (loot bags) wait in the middle.`,
-      `Carry a potli into the <b>other team's den</b>. It stays there and counts for you.`,
-      `<b>Get both potlis into their den at the same time to win.</b>`,
-      `They can steal a potli back out of their den, so guard it!`,
+      `You start in the other team's den. <b>Your den</b> (your colour) is on the far side, where they start.`,
+      `Carry a potli into <b>your den</b>. It's dropped there and counts for you.`,
+      `<b>Get both potlis into your den at the same time to win.</b> Enemies can steal them back out, so guard it!`,
     ],
   },
   {
@@ -35,6 +35,7 @@ const PAGES: Page[] = [
       `<b>Move:</b> drag the joystick on the left (phone), or WASD / arrow keys.`,
       `<b>Big button</b> (Space) does whatever fits right now: Tag, Grab, Snatch or Unfreeze.`,
       `<b>Pass</b> (E) hands your potli to a teammate right beside you.`,
+      `<b>Q</b> role button (Detective/spy) · <b>H</b> huddle (Leader) · <b>1–4</b> quick messages.`,
       `You carry <b>one potli at a time</b>, and carriers are a bit slower.`,
     ],
   },
@@ -42,7 +43,8 @@ const PAGES: Page[] = [
     icon: "🧊",
     title: "Freezing",
     lines: [
-      `<b>Tag</b> enemies on <b>your half</b> to freeze them. Inside their own den you can tag them too.`,
+      `<b>Tag</b> enemies on <b>your half</b> (where you start) to freeze them. You can also tag them inside your den.`,
+      `<b>Your den is your safe zone:</b> nobody can tag you while you're inside it.`,
       `After a tag, wait ${T.tagCooldownSec} s before your next one.`,
       `Frozen players drop the potli. <b>Only your Leader</b> (orange lamp badge) can unfreeze you with their lamp.`,
       `<b>Snatch:</b> stay beside an enemy carrier for ${T.snatchCountdownSec} s to take their potli.`,

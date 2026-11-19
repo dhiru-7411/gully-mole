@@ -250,7 +250,7 @@ export class Hud {
             ]
           : me.role === "leader"
             ? [`You're the LEADER`, `Only your lamp unfreezes teammates. You see arrows to both potlis. Stay alive!`]
-            : [`You're on ${names[team]}`, `Get BOTH potlis into the ${names[team === "blue" ? "green" : "blue"]} den to win. In their den, you can tag them! Help your Detective find the spy.`];
+            : [`You're on ${names[team]}`, `Get BOTH potlis into the ${names[team]} den, on the far side, to win. Your den is your safe zone. Help your Detective find the spy.`];
     $("role-title").textContent = title;
     $("role-title").style.color = me.secretRole === "spy" ? teamColor(me.realTeam) : teamColor(team);
     $("role-body").textContent = body;
@@ -275,7 +275,7 @@ export class Hud {
     if (mine) {
       if (mine.snatcherId) return `Snatch! Run or pass! ${mine.snatchLeft.toFixed(1)}s`;
       if (me.secretRole === "spy") return `You can't score. Slip it to ${names[me.realTeam]} (Pass)`;
-      return `You have a potli! Drop it in the ${names[team === "blue" ? "green" : "blue"]} den`;
+      return `You have a potli! Drop it in the ${names[team]} den ${team === "blue" ? "→" : "←"}`;
     }
     if (me.icedHand) return "Your hand is iced (20 s). A fireplace melts it now.";
     const myLeader = [...s.players.values()].find((p) => p.team === team && p.role === "leader");
@@ -300,10 +300,9 @@ export class Hud {
       this.endTitle.textContent = `${names[s.winner]} wins!`;
       this.endTitle.style.color = teamColor(s.winner);
     }
-    const loser = s.winner === "blue" ? "green" : "blue";
     this.endReason.textContent =
       s.endReason === "home"
-        ? `Scored in the ${names[loser]} den.`
+        ? `Both potlis in the ${names[s.winner]} den.`
         : s.endReason === "wipeout"
           ? "Froze the whole other team."
           : "Time's up: the better stats score wins.";

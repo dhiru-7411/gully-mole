@@ -216,4 +216,13 @@ describe("two potlis (D68)", () => {
     const outside = { x: den.x - 80, y: inside.y };
     expect(canTag(p("b", "blue", near(outside)), p("g", "green", outside))).toBe(false);
   });
+
+  it("the den you drop potlis in is your safe zone: nobody can tag you there (D70)", () => {
+    const den = MAP.dens.green; // Green spawns here; it's Blue's den (Blue drops potlis here)
+    const inside = { x: den.x + den.w / 2, y: den.y + den.h / 2 };
+    expect(canTag(p("g", "green", near(inside)), p("b", "blue", inside))).toBe(false);
+    // One step outside, on Green's half, the Blue attacker can be tagged again.
+    const outside = { x: den.x + den.w + 40, y: inside.y };
+    expect(canTag(p("g", "green", near(outside)), p("b", "blue", outside))).toBe(true);
+  });
 });
